@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hôm nay ăn gì?</title>
+<meta name="theme-color" content="#17141A">
+<meta name="description" content="Vòng quay chọn quán ăn, dessert, đồ uống theo mood, ngân sách và danh sách quán của riêng bạn.">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ăn gì?">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#17141A;--card:#241F29;--card2:#2E2734;--line:#3A3340;--border:#4A4252;--ink:#F6F0E8;--mute:#B9AFC0;--pink:#FF9BD2;--lime:#C6F24E}
+*{box-sizing:border-box}
+html,body{margin:0;background:#0B090D;color:var(--ink);font-family:'Be Vietnam Pro',system-ui,sans-serif;font-size:15px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--ink)}
+:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+#app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;position:relative}
+main{flex:1;padding:24px 20px 16px;display:flex;flex-direction:column;gap:12px}
+h1{margin:0;font-family:'Anton',sans-serif;font-weight:400;font-size:40px;line-height:1.35;letter-spacing:.5px;color:var(--pink)}
+h2.big{margin:0;font-family:'Anton',sans-serif;font-weight:400;font-size:28px;line-height:1.35;letter-spacing:.5px}
+.lbl{margin:0;font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--mute);text-transform:uppercase}
+.mute{color:var(--mute);font-size:13px}
+.row{display:flex;gap:8px;align-items:center}
+.col{display:flex;flex-direction:column;gap:8px}
+.wrap{display:flex;flex-wrap:wrap;gap:6px}
+.grow{flex:1;min-width:0}
+.card{background:var(--card);border-radius:22px;padding:14px}
+.chip{height:44px;padding:0 14px;border-radius:22px;border:1.5px solid var(--border);background:transparent;color:var(--ink);font-size:13px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+.chip.dash{border-style:dashed;border-color:var(--mute)}
+.btn{height:48px;padding:0 18px;border-radius:24px;border:1.5px solid var(--border);background:transparent;color:var(--ink);font-size:15px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn.pri{background:var(--pink);color:var(--bg);border-color:var(--pink);font-weight:700}
+.btn.sm{height:44px;font-size:13px;padding:0 14px}
+.btn[disabled]{opacity:.45;cursor:default}
+.tag{padding:3px 8px;border-radius:11px;font-size:11px;font-weight:700;background:var(--lime);color:var(--bg);white-space:nowrap}
+.tag.out{background:transparent;border:1px solid var(--mute);color:var(--mute)}
+.tag.ink{background:var(--ink)}
+.pill{padding:5px 10px;border-radius:14px;background:var(--card2);font-size:13px;font-weight:600}
+.sticker{display:inline-block;padding:5px 9px;background:var(--lime);color:var(--bg);font-size:11px;font-weight:700;letter-spacing:.5px;white-space:nowrap;transform:rotate(-4deg)}
+.blob{flex:none;width:56px;height:56px;border-radius:42% 58% 55% 45%/48% 44% 56% 52%;background:#3A2F3F;color:var(--pink);display:flex;align-items:center;justify-content:center;font-family:'Anton',sans-serif;font-size:20px}
+.blob.l{background:#2F3A26;color:var(--lime);border-radius:55% 45% 48% 52%/44% 56% 44% 56%}
+.num{font-family:'Anton',sans-serif;color:var(--lime);line-height:1.3}
+.qcard{background:var(--card);border-radius:22px;padding:12px 14px;display:flex;gap:12px;align-items:center;text-align:left;border:0;width:100%;color:var(--ink)}
+.qname{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+input[type=text],input[type=search],input[type=time],input[type=number],select{height:48px;width:100%;padding:0 16px;border-radius:24px;border:1.5px solid var(--border);background:var(--bg);color:var(--ink)}
+input::placeholder{color:#8E8496}
+label.f{font-size:13px;font-weight:600;display:flex;flex-direction:column;gap:6px}
+nav{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);display:flex;padding:8px 20px calc(10px + env(safe-area-inset-bottom))}
+nav button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--mute);font-size:11px;font-weight:600}
+nav button span.c{width:44px;height:44px;border-radius:50%;background:var(--card);color:var(--ink);display:flex;align-items:center;justify-content:center}
+nav button.on{color:var(--ink);font-weight:700}
+nav button.on span.c{background:var(--ink);color:var(--bg)}
+nav button.add span.c{background:var(--pink);color:var(--bg)}
+nav button.add.on span.c{outline:3px solid var(--ink);outline-offset:2px}
+.wheelbox{position:relative;height:294px;display:flex;align-items:center;justify-content:center}
+#ptr{position:absolute;top:0;left:50%;margin-left:-12px;width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:22px solid var(--ink);z-index:2;transform-origin:50% 0}
+#disc{position:relative;width:280px;height:280px;border-radius:50%;border:5px solid var(--ink);font-family:'Anton',sans-serif;letter-spacing:.5px}
+#disc span{position:absolute;left:50%;top:50%;width:78px;height:22px;margin-top:-11px;line-height:22px;text-align:center;white-space:nowrap;overflow:hidden;transform-origin:0 50%}
+#spinbtn{position:absolute;left:50%;top:50%;width:88px;height:88px;margin:-44px 0 0 -44px;border-radius:50%;border:4px solid var(--bg);background:var(--ink);color:var(--bg);font-family:'Anton',sans-serif;font-size:22px;letter-spacing:1px;z-index:3}
+.status{height:44px;display:flex;align-items:center;justify-content:center;font-family:'Anton',sans-serif;font-size:22px;letter-spacing:.5px;color:var(--mute)}
+.pop{animation:pop .28s ease-out}
+@keyframes pop{0%{opacity:0;transform:translateY(24px) scale(.96)}100%{opacity:1;transform:none}}
+@keyframes tick{0%{transform:rotate(0)}50%{transform:rotate(-16deg)}100%{transform:rotate(0)}}
+@media (prefers-reduced-motion:reduce){.pop{animation:none}}
+.toast{background:var(--ink);color:var(--bg);border-radius:22px;padding:10px 8px 10px 14px;display:flex;align-items:center;gap:10px}
+.toast .btn{border-color:var(--bg);color:var(--bg)}
+.toast .btn.dark{background:var(--bg);color:var(--ink)}
+.snack{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);max-width:440px;width:calc(100% - 40px);background:var(--card2);border:1px solid var(--border);border-radius:22px;padding:10px 10px 10px 16px;display:flex;align-items:center;gap:10px;z-index:30;font-size:13px;font-weight:600}
+.scrim{position:fixed;inset:0;background:rgba(5,4,7,.72);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:480px;max-height:92vh;overflow:auto;background:#1E1A22;border-radius:28px 28px 0 0;padding:10px 20px 18px;display:flex;flex-direction:column;gap:12px}
+.sheet .card{background:#2A2430}
+.handle{align-self:center;width:44px;height:5px;border-radius:3px;background:var(--border)}
+.stars{display:flex;margin-left:-9px}
+.stars button{width:44px;height:44px;padding:0;border:0;background:transparent;display:flex;align-items:center;justify-content:center}
+.sep{height:1px;background:var(--line)}
+.seg{display:flex;gap:4px;padding:4px;border-radius:26px;background:var(--card)}
+.seg button{flex:1;height:44px;border-radius:22px;border:0;background:transparent;color:var(--ink);font-size:13px;font-weight:600}
+.seg button.on{background:var(--ink);color:var(--bg);font-weight:700}
+.bar{height:10px;border-radius:5px;background:var(--card2);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:5px;background:var(--lime)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+</style>
+</head>
+<body>
+<div id="app"><main id="view"><p class="mute">Đang tải dữ liệu…</p></main><nav id="nav" aria-label="Điều hướng chính"></nav></div>
+<div id="layer"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+'use strict';
+var CUISINE=['Việt','Nhật','Hàn','Trung','Thái','Âu','Ấn','Khác'];
+var GROUPS={'Món chính':['Cơm','Xôi & cháo','Bún & phở','Mì & hủ tiếu','Bánh mì','Bánh & cuốn','Lẩu','Nướng','Hải sản','Món gà & vịt','Sushi & món Nhật','Pizza & mì Ý','Món chay'],'Ăn vặt':['Ăn vặt đường phố','Chiên & xiên','Bánh ngọt','Chè & kem'],'Đồ uống':['Cà phê','Trà sữa','Trà & nước ép','Sinh tố & đá xay'],'Đồ nhậu':['Mồi nhậu','Ốc','Bia & cocktail']};
+var GNAMES=Object.keys(GROUPS),FORM=[];GNAMES.forEach(function(g){FORM=FORM.concat(GROUPS[g]);});
+function groupOf(t){for(var i=0;i<GNAMES.length;i++)if(GROUPS[GNAMES[i]].indexOf(t)>=0)return GNAMES[i];return '';}
+var OLDF={'Món nước':'Bún & phở','Món khô':'Mì & hủ tiếu','Ăn vặt':'Ăn vặt đường phố','Nhậu':'Mồi nhậu','Dessert':'Chè & kem','Đồ uống':'Cà phê'};
+var SHORT={'Ăn vặt đường phố':'Ăn vặt','Sushi & món Nhật':'Món Nhật','Pizza & mì Ý':'Món Ý','Món gà & vịt':'Gà, vịt','Sinh tố & đá xay':'Sinh tố','Trà & nước ép':'Trà, nước ép','Bia & cocktail':'Bia rượu','Mì & hủ tiếu':'Mì, hủ tiếu','Bánh & cuốn':'Bánh, cuốn','Chiên & xiên':'Chiên, xiên','Xôi & cháo':'Xôi, cháo','Bún & phở':'Bún, phở','Chè & kem':'Chè, kem'};
+var CAT_SRC={"Cơm": "Cơm tấm sườn bì chả:45|Cơm gà xối mỡ:45|Cơm gà Hải Nam:60|Cơm chiên dương châu:50|Cơm chiên hải sản:65|Cơm niêu:90|Cơm văn phòng:40|Cơm cháy kho quẹt:70|Cơm bò lúc lắc:75|Cơm rang dưa bò:55", "Xôi & cháo": "Xôi mặn:25|Xôi gà:35|Xôi xéo:20|Cháo lòng:35|Cháo sườn:30|Cháo ếch Singapore:90|Cháo vịt:50|Cháo cá:45|Súp cua:30", "Bún & phở": "Phở bò:60|Phở gà:55|Bún bò Huế:55|Bún riêu:45|Bún chả Hà Nội:55|Bún thịt nướng:45|Bún mắm:65|Bún đậu mắm tôm:60|Bún cá:45|Bún mọc:45|Bún chả cá:45|Bánh canh cua:65|Bánh canh giò heo:50|Bún măng vịt:55", "Mì & hủ tiếu": "Hủ tiếu Nam Vang:55|Hủ tiếu gõ:25|Hủ tiếu bò kho:55|Mì hoành thánh:50|Mì vịt tiềm:80|Mì Quảng:45|Cao lầu:50|Mì xào giòn:65|Miến gà:45|Miến lươn:55|Nui xào bò:50|Mì trộn:35|Ramen:120|Udon:110", "Bánh mì": "Bánh mì thịt:25|Bánh mì chả cá:20|Bánh mì xíu mại:25|Bánh mì chảo:45|Bánh mì heo quay:30|Bánh mì ốp la:20|Bánh mì bò kho:50|Bánh mì que:15", "Bánh & cuốn": "Bánh xèo:60|Bánh cuốn nóng:35|Bánh khọt:55|Bánh bèo:35|Bánh bột lọc:35|Bánh ướt lòng gà:45|Gỏi cuốn:30|Bò bía:20|Bánh tráng cuốn thịt heo:90|Bánh căn:45|Bánh hỏi heo quay:55|Nem nướng Nha Trang:60", "Lẩu": "Lẩu Thái:180|Lẩu bò:200|Lẩu gà lá é:170|Lẩu dê:220|Lẩu mắm:200|Lẩu cá kèo:180|Lẩu hải sản:230|Lẩu nấm:190|Lẩu riêu cua bắp bò:200|Lẩu ếch:170|Lẩu Tứ Xuyên:250", "Nướng": "Ba chỉ nướng:150|Bò nướng tảng:220|Sườn nướng:120|Nướng Hàn Quốc:250|Gà nướng muối ớt:160|Nướng ngói:180|Thịt xiên nướng:15|Bò lá lốt:70|Dê nướng:200", "Hải sản": "Cua rang me:350|Ghẹ hấp:250|Tôm nướng muối ớt:180|Mực nướng sa tế:160|Hàu nướng phô mai:25|Cá lóc nướng trui:200|Nghêu hấp sả:90|Càng cúm rang muối:180|Cá hồi sashimi:220", "Món gà & vịt": "Gà rán:45|Gà nướng lu:220|Gà hấp hành:200|Vịt quay:180|Vịt nướng chao:220|Gà ủ muối:200|Chân gà sả tắc:60|Cánh gà chiên mắm:70|Phá lấu:35", "Sushi & món Nhật": "Sushi set:200|Sashimi tổng hợp:300|Cơm cà ri Nhật:110|Tonkatsu:140|Tempura:120|Takoyaki:40|Okonomiyaki:120|Cơm lươn Nhật:280|Gyudon:90", "Pizza & mì Ý": "Pizza Margherita:180|Pizza hải sản:220|Mì Ý sốt bò bằm:110|Mì Ý carbonara:130|Burger bò:90|Bít tết:220|Lasagna:150|Salad Caesar:95", "Món chay": "Cơm chay:40|Bún chay:40|Lẩu nấm chay:160|Bánh mì chay:20|Hủ tiếu chay:35|Gỏi cuốn chay:25|Đậu hũ sốt cà:45|Bánh bao chay:20", "Ăn vặt đường phố": "Bánh tráng trộn:25|Bánh tráng nướng:25|Bột chiên:35|Há cảo:35|Xíu mại:30|Bắp xào:25|Trứng vịt lộn:10|Gỏi khô bò:30|Bánh flan:12|Súp cua óc heo:40|Bánh bao:20|Khoai lang lắc:25", "Chiên & xiên": "Cá viên chiên:25|Xiên que nướng:10|Nem chua rán:40|Khoai tây chiên:35|Gà viên chiên:35|Bánh gối:15|Chả giò:40|Tokbokki:55|Phô mai que:30", "Bánh ngọt": "Bánh cheesecake:65|Tiramisu:65|Bánh su kem:15|Bánh croissant:40|Bánh mousse:60|Bánh tart trứng:20|Bánh bông lan trứng muối:45|Donut:25|Bánh crepe sầu riêng:60|Bingsu:90", "Chè & kem": "Chè Thái:30|Chè khúc bạch:35|Chè bưởi:25|Chè đậu:20|Tàu hũ nước đường:15|Sâm bổ lượng:30|Kem dừa:40|Kem gelato:55|Kem bơ:35|Rau câu dừa:15|Sữa chua nếp cẩm:25", "Cà phê": "Cà phê sữa đá:25|Cà phê đen:20|Bạc xỉu:30|Cà phê muối:35|Cà phê trứng:40|Americano:45|Latte:55|Cappuccino:55|Cold brew:55|Cà phê dừa:45", "Trà sữa": "Trà sữa trân châu:40|Trà sữa matcha:50|Trà sữa ô long:45|Sữa tươi trân châu đường đen:45|Trà sữa khoai môn:45|Hồng trà sữa:40|Trà sữa nướng:45", "Trà & nước ép": "Trà đào cam sả:45|Trà vải:45|Trà tắc:20|Trà chanh:20|Trà ô long:35|Nước mía:15|Nước cam ép:35|Nước dừa:25|Nước ép dưa hấu:35|Rau má đậu xanh:25|Sữa đậu nành:12", "Sinh tố & đá xay": "Sinh tố bơ:40|Sinh tố xoài:35|Sinh tố dâu:40|Matcha đá xay:60|Cookie đá xay:60|Sữa chua đá xay:45|Dừa tắc:25", "Mồi nhậu": "Lòng nướng:90|Đậu hũ chiên sả:50|Khô mực nướng:120|Gỏi gà măng cụt:150|Ếch chiên bơ:120|Dồi sụn nướng:90|Bò tái chanh:130|Chân gà nướng:80|Vú dê nướng:160|Gỏi bò tái me:120|Đậu phộng rang:20", "Ốc": "Ốc len xào dừa:70|Ốc hương rang muối:120|Ốc móng tay xào me:80|Sò điệp nướng mỡ hành:90|Sò huyết rang me:80|Ốc bươu nhồi thịt:90|Nghêu hấp Thái:80|Ốc mỡ xào bơ tỏi:75", "Bia & cocktail": "Bia tươi:35|Bia craft:95|Cocktail:160|Mojito:140|Rượu soju:90|Highball:150|Rượu vang ly:150|Sake:180"};
+var CAT=[];FORM.forEach(function(t){(CAT_SRC[t]||'').split('|').forEach(function(x){var p=x.split(':');if(p[0])CAT.push({name:p[0],type:t,group:groupOf(t),price:+p[1],src:'cat'});});});
+var PB=[[0,50,'Dưới 50k'],[50,100,'50–100k'],[100,200,'100–200k'],[200,1e9,'Trên 200k']];
+var TYPE=['Vỉa hè','Quán ăn','Quán nhậu','Nhà hàng','Cà phê','Bar','Tiệm dessert'];
+var MOOD=['Muốn quẩy','Chill','Khám phá','Ăn nhẹ'];
+var FOOD=[[0,100,'Dưới 100k'],[100,200,'100–200k'],[200,350,'200–350k'],[350,500,'350–500k'],[500,9999,'Trên 500k']];
+var DRINK=[[0,50,'Dưới 50k'],[50,100,'50–100k'],[100,200,'100–200k'],[200,9999,'Trên 200k']];
+var SWEET=GROUPS['Đồ uống'].concat(['Bánh ngọt','Chè & kem']);
+var STAR='M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z';
+var IC={bowl:'<path d="M4 12h16a8 8 0 0 1-16 0zM9 8c0-1.5 1-1.5 1-3M14 8c0-1.5 1-1.5 1-3"/>',wheel:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>',list:'<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',plus:'<path d="M12 5v14M5 12h14"/>',pin:'<path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',back:'<path d="M15 5l-7 7 7 7"/>',search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',filter:'<path d="M4 6h16M7 12h10M10 18h4"/>',cam:'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'};
+function ic(n,s){return '<svg aria-hidden="true" width="'+(s||20)+'" height="'+(s||20)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+IC[n]+'</svg>';}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function fmt(n){return (Math.round(n*10)/10).toFixed(1).replace('.',',');}
+function uid(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function ls(k,v){try{if(v===undefined){var r=localStorage.getItem(k);return r?JSON.parse(r):null;}localStorage.setItem(k,JSON.stringify(v));}catch(e){}return null;}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
+function lsOk(){try{localStorage.setItem('hnag-t','1');localStorage.removeItem('hnag-t');return true;}catch(e){return false;}}
+
+var S={tab:'home',quan:[],bua:[],loaded:false,dbOk:null,stale:false,
+ f:ls('hnag-f')||{mood:null,price:null,cuisine:[],type:[],group:[],area:null,open:false},
+ d:{q:'',group:'',type:'',price:null,sort:'az',n:24,mine:false},dish:null,
+ phase:'idle',cat:null,result:null,skip:[],rot:0,busy:false,commit:null,
+ seg:'all',sort:'new',q:'',detail:null,draft:null,sheet:null,rate:null,scan:null,imp:null,work:null,snack:null,delArm:null,pending:false};
+if(!S.f.group)S.f.group=[];
+var db=null,sample=null;
+
+/* ---------- local storage database (miễn phí, lưu trong trình duyệt) ---------- */
+function localDB(){var subs={},mem={};
+ function key(c){return 'hnag-db-'+c;}
+ function load(c){var m=ls(key(c));return m||mem[c]||{};}
+ function store(c,m){mem[c]=m;return lsSet(key(c),m);}
+ function emit(c){var m=load(c);(subs[c]||[]).forEach(function(cb){cb({docs:Object.keys(m).map(function(id){return {id:id,data:function(){return m[id];}};})});});}
+ window.addEventListener('storage',function(e){if(e.key&&e.key.indexOf('hnag-db-')===0)emit(e.key.slice(8));});
+ return {collection:function(c){return {
+  doc:function(id){return {
+   set:function(b){var m=load(c);m[id]=b;return store(c,m)?Promise.resolve():Promise.reject({code:'quota_exceeded'});},
+   delete:function(){var m=load(c);delete m[id];store(c,m);return Promise.resolve();}};},
+  onSnapshot:function(cb){(subs[c]=subs[c]||[]).push(cb);setTimeout(function(){emit(c);},0);}};}};}
+
+/* ---------- data ---------- */
+function qById(id){for(var i=0;i<S.quan.length;i++)if(S.quan[i].id===id)return S.quan[i];return null;}
+function bodyOf(o){var b={};for(var k in o)if(k!=='id'&&o[k]!==undefined)b[k]=o[k];return b;}
+function saveQ(q){var i=S.quan.findIndex(function(x){return x.id===q.id;});if(i<0)S.quan.push(q);else S.quan[i]=q;
+ if(db)return db.collection('quan').doc(q.id).set(bodyOf(q)).catch(werr);return Promise.resolve();}
+function delQ(id){S.quan=S.quan.filter(function(x){return x.id!==id;});if(db)return db.collection('quan').doc(id).delete().catch(werr);return Promise.resolve();}
+function saveB(b){var i=S.bua.findIndex(function(x){return x.id===b.id;});if(i<0)S.bua.push(b);else S.bua[i]=b;
+ if(db)return db.collection('bua').doc(b.id).set(bodyOf(b)).catch(werr);return Promise.resolve();}
+function delB(id){S.bua=S.bua.filter(function(x){return x.id!==id;});if(db)return db.collection('bua').doc(id).delete().catch(werr);return Promise.resolve();}
+function werr(e){snack(e&&e.code==='quota_exceeded'?'Bộ nhớ trình duyệt đã đầy, chưa lưu được.':'Chưa lưu được thay đổi vừa rồi.');}
+function mapDocs(sn){return sn.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;if(OLDF[o.form])o.form=OLDF[o.form];return o;});}
+function init(){
+ db=localDB();S.dbOk=lsOk();
+ db.collection('quan').onSnapshot(function(sn){S.quan=mapDocs(sn);S.loaded=true;soft();});
+ db.collection('bua').onSnapshot(function(sn){S.bua=mapDocs(sn);soft();});
+}
+function soft(){var a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){S.pending=true;return;}if(S.busy){S.pending=true;return;}render();}
+
+/* ---------- backup ---------- */
+function exportData(){var data={app:'hom-nay-an-gi',v:1,at:Date.now(),quan:S.quan,bua:S.bua,f:S.f};
+ var blob=new Blob([JSON.stringify(data)],{type:'application/json'});var d=new Date();
+ var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hom-nay-an-gi-'+d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2)+'.json';
+ document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+ ls('hnag-lastbackup',Date.now());snack('Đã tải file sao lưu '+S.quan.length+' quán.');}
+function importBackup(file){readText(file).then(function(t){var j;try{j=JSON.parse(t);}catch(e){j=null;}
+ if(!j||j.app!=='hom-nay-an-gi'||!Array.isArray(j.quan)){snack('File này không phải file sao lưu của Hôm nay ăn gì?.');return;}
+ var qs=j.quan.filter(function(q){return q&&q.id&&q.name;}),bs=(j.bua||[]).filter(function(b){return b&&b.id;});
+ S.busy=true;S.work='Đang khôi phục…';render();
+ runQueue(qs,function(q){return saveQ(q);},'Đang khôi phục quán').then(function(){return runQueue(bs,function(b){return saveB(b);},'Đang khôi phục bữa ăn');}).then(function(){S.busy=false;snack('Đã khôi phục '+qs.length+' quán và '+bs.length+' bữa ăn.');});
+ }).catch(function(){snack('Không đọc được file.');});}
+
+/* ---------- logic ---------- */
+function isSweet(q){return SWEET.indexOf(q.form)>=0;}
+function bandsOf(q){return isSweet(q)?DRINK:FOOD;}
+function priceTxt(q){if(q.pmin==null)return '';var b=bandsOf(q);for(var i=0;i<b.length;i++)if(b[i][0]===q.pmin&&b[i][1]===q.pmax)return b[i][2];return q.pmin+'–'+q.pmax+'k';}
+function openNow(q){if(!q.open||!q.close)return null;var d=new Date(),m=d.getHours()*60+d.getMinutes();var a=q.open.split(':'),b=q.close.split(':');var o=+a[0]*60+ +a[1],c=+b[0]*60+ +b[1];if(c<=o)return m>=o||m<c;return m>=o&&m<c;}
+function days(q){if(!q.lastVisit)return null;return Math.floor((Date.now()-q.lastVisit)/864e5);}
+function weight(q){var w=((q.score||3.5)/3);var d=days(q);w*=d==null?1.5:(d<7?0.2:Math.min(1.5,0.5+d/30));if(q.again==='yes')w*=(S.f.mood==='Khám phá'?0.6:1.3);return w;}
+function ready(q){return !!q.form&&q.again!=='no';}
+function match(q,ignore){var f=S.f;ignore=ignore||{};
+ if(!ready(q))return false;
+ if(f.mood&&!ignore.mood){if(f.mood==='Khám phá'){if(q.visits&&!q.wish)return false;}else if((q.moods||[]).indexOf(f.mood)<0)return false;}
+ if(f.price!=null&&!ignore.price){var b=FOOD[f.price];if(q.pmin==null||isSweet(q)||q.pmin>=b[1]||q.pmax<=b[0])return false;}
+ if(f.cuisine.length&&!ignore.cuisine&&f.cuisine.indexOf(q.cuisine)<0)return false;
+ if(f.type.length&&!ignore.type&&f.type.indexOf(q.type)<0)return false;
+ if(f.group.length&&!ignore.group&&f.group.indexOf(groupOf(q.form))<0)return false;
+ if(f.area&&!ignore.area&&q.area!==f.area)return false;
+ if(f.open&&!ignore.open&&openNow(q)===false)return false;
+ return true;}
+function cands(ignore){return S.quan.filter(function(q){return match(q,ignore);});}
+function catsOf(list){var m={};list.forEach(function(q){m[q.form]=1;});var ks=Object.keys(m),ord=function(a,b){return FORM.indexOf(a)-FORM.indexOf(b);};S.catTotal=ks.length;if(ks.length<=8)return ks.sort(ord);var key=ks.slice().sort().join('|');if(S.ck!==key||!S.cc){S.ck=key;for(var i=ks.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=ks[i];ks[i]=ks[j];ks[j]=t;}S.cc=ks.slice(0,8).sort(ord);}return S.cc;}
+function pick(list){list=list.filter(function(q){return S.skip.indexOf(q.id)<0;});if(!list.length)return null;var t=0;list.forEach(function(q){t+=weight(q);});var r=Math.random()*t;for(var i=0;i<list.length;i++){r-=weight(list[i]);if(r<=0)return list[i];}return list[list.length-1];}
+function activeFilters(){var f=S.f,a=[];if(f.mood)a.push(['mood',f.mood]);if(f.price!=null)a.push(['price',FOOD[f.price][2]]);f.cuisine.forEach(function(c){a.push(['cuisine',c]);});f.type.forEach(function(c){a.push(['type',c]);});f.group.forEach(function(c){a.push(['group',c]);});if(f.area)a.push(['area',f.area]);if(f.open)a.push(['open','Đang mở']);return a;}
+function areas(){var m={};S.quan.forEach(function(q){if(q.area)m[q.area]=1;});return Object.keys(m).sort();}
+function goodDishes(q){return (q.dishes||[]).filter(function(d){return d.score>=4;}).sort(function(a,b){return b.score-a.score;});}
+function mapsHref(q){return q.mapUrl||('https://www.google.com/maps/search/'+encodeURIComponent(q.name+(q.area?' '+q.area:'')));}
+function dueMeal(){var now=Date.now();return S.bua.filter(function(b){return !b.rated&&!b.dismissed&&now-b.at>3*36e5;}).sort(function(a,b){return b.at-a.at;})[0]||null;}
+function when(t){var d=new Date(t),n=new Date();var hm=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);var dd=Math.floor((new Date(n.getFullYear(),n.getMonth(),n.getDate())-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);if(dd===0)return 'Hôm nay '+hm;if(dd===1)return 'Hôm qua '+hm;return d.getDate()+'/'+(d.getMonth()+1)+' '+hm;}
+
+
+/* ---------- import from Google Takeout ---------- */
+function parseCSV(t){t=t.replace(/^﻿/,'');var rows=[],row=[],cur='',q=false;for(var i=0;i<t.length;i++){var c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}else if(c==='"')q=true;else if(c===','){row.push(cur);cur='';}else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur='';}else if(c!=='\r')cur+=c;}if(cur||row.length){row.push(cur);rows.push(row);}return rows;}
+function fromCSV(text,list){var rows=parseCSV(text).filter(function(r){return r.some(function(c){return c&&c.trim();});});if(rows.length<2)return [];
+ var hi=0;for(var i=0;i<Math.min(6,rows.length);i++){if(rows[i].some(function(c){return /^\s*url\s*$/i.test(c);})){hi=i;break;}}
+ var head=rows[hi].map(function(c){return (c||'').trim().toLowerCase();}),data=rows.slice(hi+1);
+ var ti=head.findIndex(function(c){return /title|tiêu đề|^tên/.test(c);});if(ti<0)ti=0;
+ var ni=head.findIndex(function(c){return /note|ghi chú/.test(c);});
+ var ui=-1,best=0;for(var c=0;c<head.length;c++){var n=0;data.forEach(function(r){if(/^https?:\/\//i.test((r[c]||'').trim()))n++;});if(n>best){best=n;ui=c;}}
+ return data.map(function(r){return {name:(r[ti]||'').trim(),mapUrl:ui>=0?(r[ui]||'').trim():'',note:ni>=0?(r[ni]||'').trim():'',list:list};}).filter(function(x){return x.name&&!/^https?:\/\//i.test(x.name);});}
+function fromJSON(text,list){var j;try{j=JSON.parse(text);}catch(e){return [];}var fs=j&&j.features;if(!Array.isArray(fs))return [];
+ return fs.map(function(f){var p=f.properties||{},loc=p.location||{},g=f.geometry&&f.geometry.coordinates;return {name:String(loc.name||p.Title||p.name||'').trim(),mapUrl:String(p['Google Maps URL']||p.google_maps_url||''),note:String(loc.address||''),list:list,lat:g?g[1]:undefined,lng:g?g[0]:undefined};}).filter(function(x){return x.name;});}
+function readText(f){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(String(r.result));};r.onerror=rej;r.readAsText(f);});}
+function baseName(p){return p.split('/').pop().replace(/\.(csv|json)$/i,'');}
+function handleImport(files){var arr=Array.prototype.slice.call(files||[]);if(!arr.length)return;S.work='Đang đọc file…';render();
+ var out=[],skipped=[];
+ function one(f){var nm=f.name||'';
+  if(/\.zip$/i.test(nm)){if(!window.JSZip){skipped.push(nm+' (chưa mở được file .zip ở lần này, hãy giải nén rồi chọn các file .csv)');return Promise.resolve();}
+   return window.JSZip.loadAsync(f).then(function(z){var ps=[];z.forEach(function(path,e){if(e.dir)return;if(/(^|\/)(Saved|Đã lưu)\/[^\/]+\.csv$/i.test(path))ps.push(e.async('string').then(function(t){out=out.concat(fromCSV(t,baseName(path)));}));else if(/Saved Places\.json$/i.test(path)||/Địa điểm đã lưu\.json$/i.test(path))ps.push(e.async('string').then(function(t){out=out.concat(fromJSON(t,'Đã gắn sao'));}));});return Promise.all(ps);}).catch(function(){skipped.push(nm+' (không đọc được)');});}
+  if(/\.csv$/i.test(nm))return readText(f).then(function(t){out=out.concat(fromCSV(t,baseName(nm)));}).catch(function(){skipped.push(nm);});
+  if(/\.json$/i.test(nm))return readText(f).then(function(t){out=out.concat(fromJSON(t,baseName(nm)));}).catch(function(){skipped.push(nm);});
+  skipped.push(nm+' (không phải .zip, .csv hay .json)');return Promise.resolve();}
+ Promise.all(arr.map(one)).then(function(){S.work=null;
+  var seen={},have={};S.quan.forEach(function(q){have[(q.name||'').toLowerCase()]=1;if(q.mapUrl)have[q.mapUrl]=1;});
+  var items=[];out.forEach(function(x){var k=(x.mapUrl||x.name).toLowerCase();if(seen[k])return;seen[k]=1;x.name=x.name.slice(0,80);x.dup=!!(have[x.name.toLowerCase()]||(x.mapUrl&&have[x.mapUrl]));x.on=!x.dup;items.push(x);});
+  items=items.slice(0,600);
+  if(!items.length){snack(skipped.length?'Không đọc được: '+skipped.join('; '):'Không tìm thấy địa điểm nào trong file. Hãy chọn file .zip của Takeout hoặc các file .csv trong thư mục Saved.');return;}
+  S.imp={items:items,skipped:skipped};S.sheet='imp';render();});}
+function impLists(){var m={};S.imp.items.forEach(function(x){m[x.list]=m[x.list]||{n:0,on:0};m[x.list].n++;if(x.on)m[x.list].on++;});return m;}
+function impSheet(){var im=S.imp,ls=impLists(),on=im.items.filter(function(x){return x.on;}).length,dup=im.items.filter(function(x){return x.dup;}).length;
+ var h='<div class="row" style="justify-content:space-between"><div class="col grow" style="gap:2px"><h2 class="big" style="color:var(--pink)">NHẬP TỪ GOOGLE MAPS</h2><div class="mute">Tìm thấy '+im.items.length+' địa điểm trong '+Object.keys(ls).length+' danh sách'+(dup?' · '+dup+' cái đã có sẵn nên bỏ tick':'')+'</div></div><button class="btn" style="width:44px;height:44px;padding:0" data-act="close" aria-label="Đóng">'+ic('x',20)+'</button></div>';
+ if(im.skipped.length)h+='<div class="mute">Bỏ qua: '+esc(im.skipped.join('; '))+'</div>';
+ h+='<div class="col" style="gap:6px"><div class="lbl">Danh sách, chạm để chọn hoặc bỏ cả danh sách</div><div class="wrap">'+Object.keys(ls).map(function(k){return chip(k+' · '+ls[k].on+'/'+ls[k].n,ls[k].on>0,'implist',k);}).join('')+'</div></div>';
+ h+='<div class="card" style="padding:2px 14px;max-height:38vh;overflow:auto">'+im.items.map(function(x,i){return '<label class="row" style="min-height:48px;border-bottom:1px solid #3F3746"><input type="checkbox" data-f="imp" data-i="'+i+'"'+(x.on?' checked':'')+' style="flex:none;width:22px;height:22px;accent-color:#FF9BD2"><span class="col grow" style="gap:0"><span class="ell" style="font-weight:600">'+esc(x.name)+'</span><span class="mute ell" style="font-size:11px">'+esc(x.list)+(x.dup?' · đã có':'')+(x.note?' · '+esc(x.note):'')+'</span></span></label>';}).join('')+'</div>';
+ h+='<div class="mute">Quán nhập vào sẽ nằm trong Hộp chờ, kèm link để chỉ đường. File của Google không có giá, giờ mở cửa hay loại món, nên bạn cần gắn tag.</div><div class="row"><button class="btn pri grow" data-act="impsave"'+(on?'':' disabled')+'>Nhập '+on+' quán vào Hộp chờ</button><button class="btn" data-act="close">Bỏ</button></div>';
+ return sheetWrap('Nhập từ Google Maps',h);}
+function runQueue(list,fn,label){var i=0,n=list.length;return new Promise(function(done){function next(){if(i>=n){S.work=null;done();return;}var batch=list.slice(i,i+4);i+=batch.length;S.work=label+' '+Math.min(i,n)+'/'+n+'…';var w=document.getElementById('work');if(w)w.textContent=S.work;Promise.all(batch.map(fn)).then(next,next);}next();});}
+function impSave(){var items=S.imp.items.filter(function(x){return x.on;}),t=Date.now();S.sheet=null;S.imp=null;S.busy=true;S.work='Đang nhập…';render();
+ var qs=items.map(function(x,i){var q={id:uid('q')+i,name:x.name,area:'',mapUrl:x.mapUrl||'',note:x.note||'',list:x.list,form:'',cuisine:'',type:'',moods:[],created:t+i,visits:0,dishes:[]};if(x.lat!=null){q.lat=x.lat;q.lng=x.lng;}return q;});
+ runQueue(qs,function(q){S.quan.push(q);return db?db.collection('quan').doc(q.id).set(bodyOf(q)):Promise.resolve();},'Đang nhập').then(function(){S.busy=false;S.tab='list';S.seg='all';S.detail=null;snack('Đã nhập '+qs.length+' quán vào Hộp chờ.');window.scrollTo(0,0);});}
+function inboxNoSug(){return S.quan.filter(function(q){return !q.form&&!q.sug;});}
+function applySug(q){var sg=q.sug||{};var n=Object.assign({},q,{form:sg.form,cuisine:sg.cuisine||'',type:sg.type||''});delete n.sug;return n;}
+function inboxCard(q,i){var sg=q.sug;
+ if(!sg)return '<div class="card row" style="padding:12px 14px;gap:12px">'+blob(q,i%2)+'<div class="col grow" style="gap:2px"><div class="qname">'+esc(q.name)+'</div><div class="mute ell">'+esc(q.list?'Từ danh sách "'+q.list+'"':'Chưa vào vòng quay')+'</div></div><button class="btn sm pri" data-act="edit" data-id="'+esc(q.id)+'">Gắn tag</button></div>';
+ if(!sg.food)return '<div class="card col" style="padding:12px 14px;gap:8px"><div class="row" style="gap:12px">'+blob(q,i%2)+'<div class="col grow" style="gap:2px"><div class="qname">'+esc(q.name)+'</div><div class="mute">AI đoán: có vẻ không phải chỗ ăn uống</div></div></div><div class="row"><button class="btn sm grow" data-act="edit" data-id="'+esc(q.id)+'">Vẫn gắn tag</button><button class="btn sm grow" data-act="delnow" data-id="'+esc(q.id)+'">Xóa</button></div></div>';
+ return '<div class="card col" style="padding:12px 14px;gap:8px"><div class="row" style="gap:12px">'+blob(q,i%2)+'<div class="col grow" style="gap:2px"><div class="qname">'+esc(q.name)+'</div><div class="mute">AI đoán từ tên quán</div></div></div><div class="wrap">'+[sg.form,sg.cuisine?'Món '+sg.cuisine:'',sg.type].filter(Boolean).map(function(t){return '<span class="pill" style="border:1.5px dashed var(--lime);background:transparent;color:var(--lime)">'+esc(t)+'</span>';}).join('')+'</div><div class="row"><button class="btn sm pri grow" data-act="oksug" data-id="'+esc(q.id)+'">Duyệt</button><button class="btn sm grow" data-act="edit" data-id="'+esc(q.id)+'">Sửa</button></div></div>';}
+
+/* ---------- pieces ---------- */
+function blob(q,l){return '<div class="blob'+(l?' l':'')+'" aria-hidden="true">'+esc((q.name||'?').trim().charAt(0).toUpperCase())+'</div>';}
+function metaOf(q){var a=[];if(q.cuisine&&q.cuisine!=='Khác')a.push('Món '+q.cuisine);else if(q.form)a.push(q.form);if(q.area)a.push(q.area);var p=priceTxt(q);if(p)a.push(p);var o=openNow(q);if(o===true)a.push('mở đến '+q.close);if(o===false)a.push('đang đóng');return a.join(' · ');}
+function scoreBox(q){if(q.score)return '<div class="col" style="gap:0;align-items:flex-end;flex:none"><div class="num" style="font-size:20px">'+fmt(q.score)+'</div><div class="mute" style="font-size:11px">bạn chấm</div></div>';return '<div class="col" style="gap:0;align-items:flex-end;flex:none"><div class="num" style="font-size:20px;color:var(--mute)">–</div><div class="mute" style="font-size:11px">'+(q.visits?'chưa chấm':'chưa đi')+'</div></div>';}
+function qcard(q,i,extra){return '<button class="qcard" data-act="open" data-id="'+esc(q.id)+'">'+blob(q,i%2)+'<span class="col grow" style="gap:3px"><span class="qname">'+esc(q.name)+'</span><span class="mute ell">'+esc(extra||metaOf(q)||'Chưa gắn tag')+'</span></span>'+scoreBox(q)+'</button>';}
+function starsHTML(n,act,idx,lab){var h='<div class="stars" role="group" aria-label="Số sao cho '+esc(lab)+'">';for(var i=1;i<=5;i++){var on=i<=n;h+='<button type="button" data-act="'+act+'" data-i="'+idx+'" data-n="'+i+'" aria-label="'+i+' sao" aria-pressed="'+(i===n)+'"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="'+(on?'#C6F24E':'none')+'" stroke="'+(on?'#C6F24E':'#6B6273')+'" stroke-width="1.8" stroke-linejoin="round"><path d="'+STAR+'"/></svg></button>';}return h+'</div>';}
+function chip(t,on,act,val,cls){return '<button type="button" class="chip'+(on?' on':'')+(cls?' '+cls:'')+'" data-act="'+act+'" data-v="'+esc(val)+'" aria-pressed="'+!!on+'">'+esc(t)+'</button>';}
+
+/* ---------- home ---------- */
+function wheelHTML(cats){var n=cats.length,step=360/n,pal=['#FF9BD2','#2E2734','#C6F24E','#2E2734'],cols=[];for(var i=0;i<n;i++)cols.push(pal[i%4]);if(n>2&&cols[n-1]===cols[0])cols[n-1]=cols[0]==='#FF9BD2'?'#C6F24E':'#FF9BD2';
+ var stops=cols.map(function(c,i){return c+' '+(i*step)+'deg '+((i+1)*step)+'deg';}).join(', ');var sp='';
+ cats.forEach(function(t,i){var th=i*step+step/2,fg=cols[i]==='#2E2734'?'#F6F0E8':'#17141A';var tr=th<180?'rotate('+(th-90)+'deg) translateX(50px)':'rotate('+(th-270)+'deg) translateX(-128px)';var lb=(SHORT[t]||t).toUpperCase();sp+='<span style="color:'+fg+';font-size:'+(n>6||lb.length>8?13:15)+'px;transform:'+tr+'">'+esc(lb)+'</span>';});
+ return '<div class="wheelbox"><div id="ptr" aria-hidden="true"></div><div id="disc" style="background:conic-gradient('+stops+');transform:rotate('+S.rot+'deg)">'+sp+'</div><button type="button" id="spinbtn" data-act="spin">QUAY</button><div class="sticker" style="position:absolute;right:0;bottom:6px;transform:rotate(-7deg)">'+(S.catTotal>n?n+' TRONG '+S.catTotal+' LOẠI MÓN':n+' LOẠI MÓN CÒN HỢP')+'</div></div>';}
+function homeIdle(){var h='<h1>HÔM NAY ĂN GÌ?</h1>';var due=dueMeal();
+ if(due)h+='<div class="toast" role="status"><div class="col grow" style="gap:1px"><div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#5A4A5C">'+esc(when(due.at).toUpperCase())+'</div><div style="font-size:13px;font-weight:700">Bữa ở '+esc(due.quanName)+' thế nào?</div></div><button class="btn sm dark" data-act="rate" data-id="'+esc(due.id)+'">Chấm điểm</button><button class="btn sm" style="width:44px;padding:0;border:0" data-act="later" data-id="'+esc(due.id)+'" aria-label="Để sau">'+ic('x',18)+'</button></div>';
+ var rd=S.quan.filter(ready);
+ if(!S.quan.length)return h+onboard();
+ if(!rd.length)return h+'<div class="card col"><div style="font-weight:700">Chưa có quán nào gắn tag</div><div class="mute">Vòng quay cần biết quán thuộc loại món gì. Mở tab Quán và gắn tag cho các quán trong Hộp chờ.</div><button class="btn pri" data-act="tab" data-v="list">Mở Hộp chờ</button></div>';
+ if(S.quan.length<10)h+='<div class="card col" style="gap:8px"><div class="row" style="justify-content:space-between"><div style="font-weight:700;font-size:13px">Đã có '+S.quan.length+' trên 10 quán nên có</div><button class="btn sm" data-act="tab" data-v="add">Thêm quán</button></div><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="10" aria-valuenow="'+S.quan.length+'" aria-label="Số quán đã thêm"><i style="width:'+Math.min(100,S.quan.length*10)+'%"></i></div></div>';
+ h+='<div class="col" style="gap:6px"><div class="lbl">Mood hôm nay</div><div class="wrap">'+MOOD.map(function(m){return chip(m,S.f.mood===m,'mood',m);}).join('')+'</div></div>';
+ var af=activeFilters().filter(function(a){return a[0]!=='mood'&&a[0]!=='price';}).length;
+ h+='<div class="col" style="gap:6px"><div class="lbl">Ngân sách và bộ lọc</div><div class="wrap">'+FOOD.slice(0,4).map(function(b,i){return chip(b[2],S.f.price===i,'price',i);}).join('')+'<button type="button" class="chip'+(af?' on':'')+'" data-act="sheet" data-v="filter">'+ic('filter',16)+'Bộ lọc'+(af?' · '+af:'')+'</button></div></div>';
+ var list=cands();
+ if(!list.length)return h+noMatch();
+ var cats=catsOf(list);S.cats=cats;
+ if(cats.length<2)h+='<div class="card col"><div class="mute">Chỉ còn một loại món hợp: <b style="color:var(--ink)">'+esc(cats[0])+'</b> ('+list.length+' quán). Không cần quay.</div><button class="btn pri" data-act="skipwheel">Gợi ý quán luôn</button></div>';
+ else h+=wheelHTML(cats)+'<div class="status" id="status" role="status">'+list.length+' QUÁN ĐANG HỢP</div>'+(S.catTotal>8?'<button class="btn sm" data-act="reshuffle">Đổi 8 loại món khác lên vòng quay</button>':'');
+ h+='<div class="row"><button class="btn sm grow" data-act="fav">Chọn giúp quán quen</button>'+(cats.length>1?'<button class="btn sm grow" data-act="skipwheel">Bỏ qua vòng quay</button>':'')+'</div>';
+ return h;}
+function onboard(){return '<div class="mute" style="font-size:15px">Vòng quay chỉ chọn trong những quán bạn đã lưu. Thêm khoảng 10 quán bạn hay ăn là dùng được ngay, phần còn lại thêm dần sau.</div><button class="btn pri" data-act="tab" data-v="add">'+ic('plus',18)+'Thêm quán đầu tiên</button><button class="btn" data-act="seed">Thêm 6 quán mẫu để xem thử</button><label class="btn">Khôi phục từ file sao lưu<input type="file" class="sr" data-f="backup" accept=".json,application/json"></label><div class="mute" style="text-align:center">Quán mẫu có chữ "(mẫu)" trong tên, xóa được bất cứ lúc nào.</div>';}
+function noMatch(){var af=activeFilters();var h='<div class="card col"><div style="font-weight:700">Chưa có quán hợp</div><div class="mute">Trong '+S.quan.filter(ready).length+' quán của bạn, không quán nào khớp cả '+af.length+' bộ lọc đang bật. Gỡ bớt một cái:</div>';
+ af.forEach(function(a){var ig={};ig[a[0]]=true;var n=a[0]==='cuisine'||a[0]==='type'||a[0]==='group'?S.quan.filter(function(q){var keep=S.f[a[0]];S.f[a[0]]=keep.filter(function(x){return x!==a[1];});var r=match(q);S.f[a[0]]=keep;return r;}).length:cands(ig).length;
+  h+='<button class="btn sm" style="justify-content:space-between" data-act="unf" data-k="'+a[0]+'" data-v="'+esc(a[1])+'"><span>Bỏ "'+esc(a[1])+'"</span><span style="color:var(--lime)">còn '+n+' quán</span></button>';});
+ return h+'</div><a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/'+encodeURIComponent((S.f.cuisine[0]?'món '+S.f.cuisine[0]:'quán ăn')+' gần đây')+'">'+ic('search',18)+'Tìm quán mới trên Google Maps</a>';}
+function homeDone(){var q=S.result;if(!q)return homeIdle();var gd=goodDishes(q).slice(0,2).map(function(d){return d.name;}).join(', ');
+ var h='<h1>'+(S.cat?'QUAY RA: '+esc(S.cat.toUpperCase()):'GỢI Ý CHO BẠN')+'</h1>';
+ h+='<div class="card col pop" style="gap:10px"><div class="row" style="gap:12px">'+blob(q)+'<div class="col grow" style="gap:2px"><div style="font-size:20px;font-weight:700;line-height:1.3">'+esc(q.name)+'</div><div class="mute">'+esc(metaOf(q))+'</div></div>'+scoreBox(q)+'</div>';
+ var st=[];if(q.again==='yes')st.push('<span class="tag">SẼ QUAY LẠI</span>');if(q.visits)st.push('<span class="tag ink">ĐÃ ĐI '+q.visits+' LẦN</span>');else st.push('<span class="tag ink">CHƯA ĐI</span>');var d=days(q);if(d!=null)st.push('<span class="tag out">'+(d===0?'HÔM NAY':d+' NGÀY TRƯỚC')+'</span>');
+ h+='<div class="wrap">'+st.join('')+'</div>';
+ if(gd)h+='<div class="row"><span class="tag">NÊN GỌI</span><span style="font-size:13px;font-weight:600">'+esc(gd)+'</span></div>';
+ h+='<div class="row"><button class="btn pri grow" data-act="commit">Chốt quán này</button><button class="btn" data-act="other">Quán khác</button></div></div>';
+ h+='<div class="row"><button class="btn sm grow" data-act="open" data-id="'+esc(q.id)+'">Xem trang quán</button><button class="btn sm grow" data-act="again">Quay lần nữa</button></div>';
+ return h;}
+function homeCommitted(){var q=S.result,b=S.commit;if(!q||!b)return homeIdle();var gd=goodDishes(q).slice(0,3).map(function(d){return d.name;}).join(', ');
+ var h='<h1>ĐÃ CHỐT, ĐI THÔI!</h1><div class="mute">'+esc(q.name)+(metaOf(q)?' · '+esc(metaOf(q)):'')+'</div><div class="card col pop" style="gap:10px">';
+ if(gd)h+='<div class="row"><span class="tag">NÊN GỌI</span><span style="font-size:13px;font-weight:600">'+esc(gd)+'</span></div>';
+ h+='<a class="btn pri" target="_blank" rel="noopener" href="'+esc(mapsHref(q))+'">'+ic('pin',18)+'Chỉ đường trên Google Maps</a></div>';
+ if(!isSweet(q)){var sw=S.quan.filter(function(x){return ready(x)&&isSweet(x)&&x.id!==q.id;});var same=sw.filter(function(x){return q.area&&x.area===q.area;});var nx=pick(same.length?same:sw);
+  if(nx)h+='<button class="qcard" data-act="open" data-id="'+esc(nx.id)+'">'+blob(nx,1)+'<span class="col grow" style="gap:2px"><span class="lbl">Ăn xong đi tiếp</span><span class="qname">'+esc(nx.name)+'</span><span class="mute ell">'+esc(metaOf(nx))+'</span></span></button>';}
+ h+='<div class="mute">Khoảng 3 giờ nữa, khi bạn mở lại app, sẽ có một lời nhắc nhỏ hỏi bữa ăn thế nào. Không trả lời cũng không sao. Muốn chấm ngay thì vào Quán › Gần đây.</div>';
+ h+='<div class="card row" style="padding:8px 8px 8px 14px;background:var(--card2)"><div class="grow" style="font-size:13px;font-weight:600">Chốt nhầm quán?</div><button class="btn sm" data-act="undo">Hoàn tác</button></div><button class="btn sm" data-act="reset">Về màn hình quay</button>';
+ return h;}
+
+/* ---------- list ---------- */
+function listView(){var h='<h1>QUÁN CỦA TÔI</h1><div class="seg">'+[['all','Tất cả'],['recent','Gần đây'],['fav','Yêu thích'],['wish','Muốn thử']].map(function(s){return '<button data-act="seg" data-v="'+s[0]+'" class="'+(S.seg===s[0]?'on':'')+'"'+(S.seg===s[0]?' aria-current="page"':'')+'>'+s[1]+'</button>';}).join('')+'</div>';
+ if(S.seg==='recent'){var bs=S.bua.slice().sort(function(a,b){return b.at-a.at;}).slice(0,30);if(!bs.length)return h+'<div class="card mute">Chưa có bữa nào. Chốt một quán ở tab Hôm nay, bữa đó sẽ hiện ở đây để bạn chấm điểm.</div>';
+  h+='<div class="col">'+bs.map(function(b){return '<div class="card row" style="padding:12px 14px;gap:12px"><div class="col grow" style="gap:3px"><div class="qname">'+esc(b.quanName)+'</div><div class="mute">'+esc(when(b.at))+(b.rated?(b.score?' · bạn chấm '+fmt(b.score):' · đã ghi nhận'):' · chưa chấm')+'</div></div>'+(b.rated?'':'<button class="btn sm pri" data-act="rate" data-id="'+esc(b.id)+'">Chấm điểm</button>')+'</div>';}).join('')+'</div>';return h;}
+ h+='<div style="position:relative"><label class="sr" for="q">Tìm quán theo tên, món hoặc khu vực</label><span style="position:absolute;left:16px;top:14px;color:var(--mute)">'+ic('search',20)+'</span><input id="q" type="search" data-f="q" value="'+esc(S.q)+'" placeholder="Tìm quán, món, khu vực…" style="padding-left:46px;background:var(--card)"></div>';
+ h+='<div class="wrap"><span class="mute" style="align-self:center">Sắp xếp</span>'+[['new','Mới lưu'],['score','Điểm cao'],['old','Lâu chưa đi'],['price','Giá thấp']].map(function(s){return chip(s[1],S.sort===s[0],'sort',s[0]);}).join('')+'</div>';
+ var list=S.quan.slice(),inbox=[];
+ if(S.seg==='all'){inbox=list.filter(function(q){return !q.form;});list=list.filter(function(q){return !!q.form;});}
+ if(S.seg==='fav')list=list.filter(function(q){return q.again==='yes';});
+ if(S.seg==='wish')list=list.filter(function(q){return q.wish&&!q.visits;});
+ var kw=S.q.trim().toLowerCase();if(kw){var f=function(q){return [q.name,q.area,q.cuisine,q.form,q.type].concat((q.dishes||[]).map(function(d){return d.name;})).join(' ').toLowerCase().indexOf(kw)>=0;};list=list.filter(f);inbox=inbox.filter(f);}
+ list.sort({new:function(a,b){return (b.created||0)-(a.created||0);},score:function(a,b){return (b.score||0)-(a.score||0);},old:function(a,b){return (a.lastVisit||0)-(b.lastVisit||0);},price:function(a,b){return (a.pmin==null?1e9:a.pmin)-(b.pmin==null?1e9:b.pmin);}}[S.sort]);
+ if(inbox.length){var okn=inbox.filter(function(q){return q.sug&&q.sug.food;}).length;
+  h+='<div class="row" style="justify-content:space-between"><h2 class="big">HỘP CHỜ</h2><span class="sticker" style="background:var(--ink)">'+inbox.length+' QUÁN CHỜ GẮN TAG</span></div>';
+  if(okn>1)h+='<button class="btn sm" data-act="okall">Duyệt cả '+okn+' gợi ý, sửa sau nếu sai</button>';
+  h+='<div class="col">'+inbox.slice(0,60).map(inboxCard).join('')+'</div>'+(inbox.length>60?'<div class="mute" style="text-align:center">Còn '+(inbox.length-60)+' quán nữa trong Hộp chờ, hiện dần khi bạn xử lý xong các quán trên.</div>':'');}
+ if(!list.length&&!inbox.length)h+='<div class="card mute">'+(kw?'Không quán nào khớp "'+esc(S.q)+'".':S.seg==='fav'?'Chưa có quán nào. Quán bạn gắn "Sẽ quay lại" khi chấm điểm sẽ nằm ở đây.':S.seg==='wish'?'Chưa có quán nào. Tick "Muốn thử" khi lưu một quán chưa đi.':'Chưa có quán nào. Bấm Lưu ở dưới để thêm.')+'</div>';
+ else h+='<div class="col">'+list.map(function(q,i){var x=q.again==='no'?'Không quay lại · đã loại khỏi vòng quay':null;return qcard(q,i,x);}).join('')+'</div>';
+ h+='<a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/'+encodeURIComponent((kw||'quán ăn')+' gần đây')+'">'+ic('search',18)+'Tìm quán mới trên Google Maps</a><div class="mute" style="text-align:center">Ưng quán nào bên Maps thì quay lại đây, bấm Lưu và gõ tên quán.</div>';
+ return h;}
+
+
+/* ---------- dishes ---------- */
+function dishList(){var d=S.d,out=d.mine?[]:CAT.slice();
+ S.quan.forEach(function(q){(q.dishes||[]).forEach(function(x){var pr=parseInt(String(x.price||'').replace(/[^\d]/g,''),10);if(pr>=1000)pr=Math.round(pr/1000);out.push({name:x.name,type:q.form||'',group:groupOf(q.form),price:pr||null,ptxt:x.price||'',quan:q.name,qid:q.id,score:x.score||0,src:'mine'});});});
+ var kw=d.q.trim().toLowerCase();
+ out=out.filter(function(x){if(d.group&&x.group!==d.group)return false;if(d.type&&x.type!==d.type)return false;if(d.price!=null){var b=PB[d.price];if(x.price==null||x.price<b[0]||x.price>=b[1])return false;}if(kw&&(x.name+' '+x.type+' '+(x.quan||'')).toLowerCase().indexOf(kw)<0)return false;return true;});
+ out.sort({az:function(a,b){return a.name.localeCompare(b.name,'vi');},up:function(a,b){return (a.price==null?1e9:a.price)-(b.price==null?1e9:b.price);},down:function(a,b){return (b.price||0)-(a.price||0);}}[d.sort]);
+ return out;}
+function mineCount(){var m={};S.quan.forEach(function(q){if(q.form&&q.again!=='no')m[q.form]=(m[q.form]||0)+1;});return m;}
+function dishView(){var d=S.d,list=dishList(),mc=mineCount();S.dl=list;
+ var h='<h1>KHÁM PHÁ MÓN</h1>';
+ h+='<div style="position:relative"><label class="sr" for="dq">Tìm món</label><span style="position:absolute;left:16px;top:14px;color:var(--mute)">'+ic('search',20)+'</span><input id="dq" type="search" data-f="dq" value="'+esc(d.q)+'" placeholder="Tìm món…" style="padding-left:46px;background:var(--card)"></div>';
+ h+='<div class="col" style="gap:6px"><div class="lbl">Nhóm món</div><div class="wrap">'+chip('Tất cả',!d.group,'dg','')+GNAMES.map(function(g){return chip(g,d.group===g,'dg',g);}).join('')+'</div></div>';
+ var types=d.group?GROUPS[d.group]:FORM;
+ h+='<label class="f">Loại món<select data-f="dtype" style="background:var(--card)"><option value="">Tất cả loại món</option>'+types.map(function(t){return '<option value="'+esc(t)+'"'+(d.type===t?' selected':'')+'>'+esc(t)+(mc[t]?' · '+mc[t]+' quán của bạn':'')+'</option>';}).join('')+'</select></label>';
+ h+='<div class="col" style="gap:6px"><div class="lbl">Khoảng giá</div><div class="wrap">'+PB.map(function(b,i){return chip(b[2],d.price===i,'dp',i);}).join('')+'</div></div>';
+ h+='<div class="wrap"><span class="mute" style="align-self:center">Sắp xếp</span>'+[['az','Tên A–Z'],['up','Giá tăng'],['down','Giá giảm']].map(function(x){return chip(x[1],d.sort===x[0],'ds',x[0]);}).join('')+chip('Chỉ món ở quán của tôi',d.mine,'dmine','1')+'</div>';
+ h+='<div class="mute" role="status">'+list.length+' món'+(d.mine?' từ menu các quán bạn đã lưu':' · giá trong danh mục là giá tham khảo')+'</div>';
+ if(!list.length)h+='<div class="card mute">'+(d.mine?'Chưa có món nào. Món vào đây khi bạn chấm điểm sau bữa ăn.':'Không món nào khớp. Thử bỏ bớt bộ lọc.')+'</div>';
+ else h+='<div class="col">'+list.slice(0,d.n).map(function(x,i){var right=x.price!=null?'<div class="num" style="font-size:20px;color:var(--ink)">'+x.price+'k</div>':'';var sub=x.src==='mine'?'Ở '+x.quan+(x.score?' · bạn chấm '+fmt(x.score):' · chưa thử'):(mc[x.type]?mc[x.type]+' quán của bạn thuộc loại này':'Chưa có quán nào của bạn');
+  return '<button class="qcard" data-act="dish" data-i="'+i+'"><span class="col grow" style="gap:2px"><span class="lbl">'+esc(x.type||'Chưa phân loại')+'</span><span class="qname">'+esc(x.name)+'</span><span class="mute ell">'+esc(sub)+'</span></span><span class="col" style="gap:2px;align-items:flex-end;flex:none">'+right+(x.src==='mine'?(x.score>=4?'<span class="tag">NÊN GỌI</span>':'<span class="tag ink">QUÁN CỦA TÔI</span>'):'')+'</span></button>';}).join('')+'</div>';
+ if(list.length>d.n)h+='<button class="btn" data-act="dmore">Xem thêm '+Math.min(24,list.length-d.n)+' món</button>';
+ return h;}
+function dishSheet(){var x=S.dish;var mine=S.quan.filter(function(q){return q.form===x.type&&q.again!=='no';}).sort(function(a,b){return weight(b)-weight(a);}).slice(0,5);
+ var h='<div class="row" style="justify-content:space-between"><div class="col grow" style="gap:2px"><div class="lbl">'+esc(x.type||'Chưa phân loại')+(x.group?' · '+esc(x.group):'')+'</div><h2 class="big" style="color:var(--pink)">'+esc(x.name.toUpperCase())+'</h2><div class="mute">'+(x.src==='mine'?'Ở '+esc(x.quan)+(x.ptxt?' · '+esc(x.ptxt):'')+(x.score?' · bạn chấm '+fmt(x.score):''):'Giá tham khảo khoảng '+x.price+'k một phần')+'</div></div><button class="btn" style="width:44px;height:44px;padding:0" data-act="close" aria-label="Đóng">'+ic('x',20)+'</button></div>';
+ if(x.src==='mine')h+='<button class="btn pri" data-act="open" data-id="'+esc(x.qid)+'">Mở trang quán</button>';
+ h+='<div class="lbl">Quán của bạn thuộc loại '+esc(x.type||'này')+'</div>';
+ if(mine.length)h+='<div class="col">'+mine.map(function(q,i){return qcard(q,i);}).join('')+'</div>';else h+='<div class="card mute">Bạn chưa lưu quán nào thuộc loại này.</div>';
+ h+='<a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/'+encodeURIComponent(x.name+' gần đây')+'">'+ic('search',18)+'Tìm "'+esc(x.name)+'" trên Google Maps</a>';
+ return sheetWrap(x.name,h);}
+
+/* ---------- detail ---------- */
+function detailView(){var q=qById(S.detail);if(!q){S.detail=null;return listView();}
+ var h='<div class="row" style="gap:12px"><button class="btn" style="width:48px;padding:0" data-act="back" aria-label="Quay về danh sách">'+ic('back',22)+'</button><div class="grow"></div><button class="btn sm" data-act="edit" data-id="'+esc(q.id)+'">Sửa</button></div>';
+ h+='<div class="row" style="gap:14px;align-items:flex-start">'+blob(q)+'<div class="col grow" style="gap:4px"><div style="font-size:28px;font-weight:700;line-height:1.25">'+esc(q.name)+'</div><div class="mute">'+esc(metaOf(q)||'Chưa gắn tag')+'</div></div></div>';
+ var tg=[q.type,q.form].concat(q.moods||[]).filter(Boolean);if(tg.length)h+='<div class="wrap">'+tg.map(function(t){return '<span class="pill">'+esc(t)+'</span>';}).join('')+'</div>';
+ var st=[];if(q.again==='yes')st.push('<span class="tag">SẼ QUAY LẠI</span>');if(q.again==='no')st.push('<span class="tag out">KHÔNG QUAY LẠI</span>');if(q.wish&&!q.visits)st.push('<span class="tag ink">MUỐN THỬ</span>');if(st.length)h+='<div class="wrap">'+st.join('')+'</div>';
+ h+='<div class="row" style="align-items:stretch"><div class="card row grow" style="padding:10px 14px;align-items:baseline"><div class="num" style="font-size:28px'+(q.score?'':';color:var(--mute)')+'">'+(q.score?fmt(q.score):'–')+'</div><div class="mute">bạn chấm</div></div><div class="card row grow" style="padding:10px 14px;align-items:baseline"><div class="num" style="font-size:28px;color:var(--ink)">'+(q.visits||0)+'</div><div class="mute">lần đã đi'+(days(q)!=null?' · '+(days(q)===0?'hôm nay':days(q)+' ngày trước'):'')+'</div></div></div>';
+ if(q.again==='no')h+='<div class="card row" style="padding:8px 8px 8px 14px;background:var(--card2)"><div class="grow" style="font-size:13px;font-weight:600">Quán này đang bị loại khỏi vòng quay.</div><button class="btn sm" data-act="unban">Cho quay lại</button></div>';
+ var ds=(q.dishes||[]).slice().sort(function(a,b){return (b.score||0)-(a.score||0);});var good=ds.filter(function(d){return d.score>=4;});
+ if(good.length)h+='<h2 class="big" style="font-size:20px">MÓN NÊN GỌI</h2><div class="wrap">'+good.slice(0,4).map(function(d){return '<div class="card col" style="padding:12px;gap:4px;flex:1 1 150px"><div class="row" style="justify-content:space-between"><span class="tag">NÊN GỌI</span><span class="num" style="font-size:20px">'+fmt(d.score)+'</span></div><div style="font-weight:700">'+esc(d.name)+'</div><div class="mute">'+(d.price?esc(d.price)+' · ':'')+'đã gọi '+(d.times||0)+' lần</div></div>';}).join('')+'</div>';
+ h+='<div class="row" style="justify-content:space-between"><h2 class="big" style="font-size:20px">MENU'+(ds.length?' · '+ds.length:'')+'</h2></div>';
+ if(!ds.length)h+='<div class="card mute">Chưa có món nào. Món bạn chấm sau mỗi bữa sẽ tự vào đây.</div>';
+ else h+='<div class="card" style="padding:4px 14px">'+ds.map(function(d,i){var bad=d.score&&d.score<=2;return '<div class="row" style="justify-content:space-between;padding:10px 0'+(i<ds.length-1?';border-bottom:1px solid var(--line)':'')+'"><div class="col grow" style="gap:3px"><div class="row" style="font-weight:600'+(bad?';color:var(--mute)':'')+'">'+esc(d.name)+(d.score>=4?'<span class="tag">NÊN GỌI</span>':bad?'<span class="tag out">NÊN TRÁNH</span>':'')+'</div><div class="mute">'+(d.score?'Bạn chấm '+fmt(d.score)+' · đã gọi '+(d.times||0)+' lần':'Chưa thử')+'</div></div><div style="flex:none;font-size:13px;font-weight:700">'+esc(d.price||'')+'</div></div>';}).join('')+'</div>';
+ h+='<div class="row" style="position:sticky;bottom:80px;background:var(--bg);padding:10px 0;margin-top:auto"><button class="btn pri grow" data-act="commitq" data-id="'+esc(q.id)+'">Chốt quán này</button><a class="btn" target="_blank" rel="noopener" href="'+esc(mapsHref(q))+'">'+ic('pin',18)+'Chỉ đường</a></div>';
+ h+='<button class="btn sm" style="color:var(--mute)" data-act="del" data-id="'+esc(q.id)+'">'+(S.delArm===q.id?'Bấm lần nữa để xóa hẳn quán này':'Xóa quán')+'</button>';
+ return h;}
+
+/* ---------- add / edit ---------- */
+function newDraft(q){return q?JSON.parse(JSON.stringify(q)):{id:null,name:'',area:'',mapUrl:'',cuisine:'',form:'',type:'',moods:[],pmin:null,pmax:null,open:'',close:'',wish:false};}
+function backupCard(){var lb=ls('hnag-lastbackup');return '<div class="card col"><div style="font-weight:700">Sao lưu và chuyển máy</div><div class="mute">Dữ liệu đang nằm trong trình duyệt của máy này. Tải file sao lưu định kỳ, và dùng file đó để chép dữ liệu sang điện thoại hoặc máy tính khác.'+(lb?' Lần sao lưu gần nhất: '+esc(when(lb))+'.':' Bạn chưa sao lưu lần nào.')+'</div><div class="row"><button class="btn sm grow" data-act="export"'+(S.quan.length?'':' disabled')+'>Tải file sao lưu</button><label class="btn sm grow">Khôi phục<input type="file" class="sr" data-f="backup" accept=".json,application/json"></label></div></div>';}
+function addView(){var d=S.draft||(S.draft=newDraft());var bands=SWEET.indexOf(d.form)>=0?DRINK:FOOD;
+ var h='<h1>'+(d.id?'SỬA QUÁN':'LƯU NHANH')+'</h1>';
+ h+='<div class="card col"><label class="f">Tên quán, hoặc dán link Google Maps<input type="text" data-f="name" value="'+esc(d.name)+'" placeholder="Ví dụ: Lẩu Thái cô Ba" autocomplete="off"></label>'+(d.note?'<div class="mute">'+esc(d.note)+'</div>':'')+'<label class="f">Khu vực<input type="text" data-f="area" value="'+esc(d.area)+'" placeholder="Ví dụ: Bình Thạnh" list="areas" autocomplete="off"></label><datalist id="areas">'+areas().map(function(a){return '<option value="'+esc(a)+'">';}).join('')+'</datalist>';
+ if(!d.id)h+='<div class="row"><button class="btn pri grow" data-act="saveq" data-v="quick"'+(d.name.trim()?'':' disabled')+'>Lưu, gắn tag sau</button></div><div class="mute">Quán lưu nhanh vào Hộp chờ. Gắn tag bên dưới thì quán vào vòng quay ngay.</div>';
+ h+='</div>';
+ if(!d.id)h+='<div class="card col"><div style="font-weight:700">Nhập hàng loạt từ Google Maps</div><div class="mute">Tải dữ liệu "Đã lưu" của bạn từ Google Takeout, rồi chọn file .zip (hoặc các file .csv bên trong) ở đây.</div><label class="btn">Chọn file Takeout<input type="file" class="sr" data-f="import" accept=".zip,.csv,.json" multiple></label><a class="mute" style="text-align:center" target="_blank" rel="noopener" href="https://takeout.google.com/">Mở Google Takeout</a></div>';
+ function sec(t,arr,key,multi){return '<div class="col" style="gap:6px"><div class="lbl">'+t+'</div><div class="wrap">'+arr.map(function(v){var on=multi?d[key].indexOf(v)>=0:d[key]===v;return chip(v,on,'dset',key+'|'+v);}).join('')+'</div></div>';}
+ h+='<div class="col" style="gap:6px"><div class="lbl">Loại món, là ô trên vòng quay</div>'+GNAMES.map(function(g){return '<div class="mute" style="margin-top:4px">'+g+'</div><div class="wrap">'+GROUPS[g].map(function(v){return chip(v,d.form===v,'dset','form|'+v);}).join('')+'</div>';}).join('')+'</div>';
+ h+=sec('Ẩm thực',CUISINE,'cuisine')+sec('Loại hình quán',TYPE,'type')+sec('Hợp với mood',MOOD.filter(function(m){return m!=='Khám phá';}),'moods',true);
+ h+='<div class="col" style="gap:6px"><div class="lbl">Giá mỗi người</div><div class="wrap">'+bands.map(function(b,i){return chip(b[2],d.pmin===b[0]&&d.pmax===b[1],'dprice',i);}).join('')+'</div></div>';
+ h+='<div class="row" style="align-items:flex-end"><label class="f grow">Mở cửa<input type="time" data-f="open" value="'+esc(d.open||'')+'"></label><label class="f grow">Đóng cửa<input type="time" data-f="close" value="'+esc(d.close||'')+'"></label></div>';
+ h+='<label class="f">Link Google Maps, để bấm Chỉ đường<input type="text" data-f="mapUrl" value="'+esc(d.mapUrl||'')+'" placeholder="Không bắt buộc" autocomplete="off"></label>';
+ h+='<label class="row" style="min-height:44px;font-weight:600"><input type="checkbox" data-f="wish"'+(d.wish?' checked':'')+' style="width:22px;height:22px;accent-color:#FF9BD2">Quán chưa đi, cho vào Muốn thử</label>';
+ h+='<div class="row"><button class="btn pri grow" data-act="saveq" data-v="full"'+(d.name.trim()&&d.form?'':' disabled')+'>'+(d.id?'Lưu thay đổi':'Lưu vào vòng quay')+'</button>'+(d.id?'<button class="btn" data-act="canceledit">Hủy</button>':'')+'</div>';
+ if(!(d.name.trim()&&d.form))h+='<div class="mute">Cần tên quán và dạng món để vào vòng quay.</div>';
+ if(!d.id)h+=backupCard();
+ return h;}
+function parseMaps(v){var m=v.match(/\/maps\/place\/([^\/]+)\/@(-?\d+\.\d+),(-?\d+\.\d+)/);if(m){try{return {name:decodeURIComponent(m[1].replace(/\+/g,' ')),lat:+m[2],lng:+m[3]};}catch(e){}}return null;}
+
+/* ---------- sheets ---------- */
+function filterSheet(){var f=S.f,ar=areas();var n=cands().length;
+ function sec(t,arr,key){return '<div class="col" style="gap:6px"><div class="lbl">'+t+'</div><div class="wrap">'+arr.map(function(v){return chip(v,f[key].indexOf(v)>=0,'fmulti',key+'|'+v);}).join('')+'</div></div>';}
+ return sheetWrap('Bộ lọc','<div class="row" style="justify-content:space-between"><div class="col" style="gap:2px"><h2 class="big" style="color:var(--pink)">BỘ LỌC</h2><div class="mute">Lựa chọn được nhớ cho lần sau</div></div><button class="btn" style="width:44px;height:44px;padding:0" data-act="close" aria-label="Đóng">'+ic('x',20)+'</button></div>'+sec('Nhóm món',GNAMES,'group')+sec('Ẩm thực',CUISINE,'cuisine')+sec('Loại hình quán',TYPE,'type')+(ar.length?'<div class="col" style="gap:6px"><div class="lbl">Khu vực</div><div class="wrap">'+ar.map(function(a){return chip(a,f.area===a,'farea',a);}).join('')+'</div></div>':'')+'<div class="col" style="gap:6px"><div class="lbl">Giờ mở cửa</div><div class="wrap">'+chip('Chỉ quán đang mở',f.open,'fopen','1')+'</div><div class="mute">Quán chưa nhập giờ mở cửa vẫn được tính là đang mở.</div></div><div class="row"><button class="btn pri grow" data-act="close">Xem '+n+' quán hợp</button><button class="btn" data-act="fclear">Xóa hết</button></div>');}
+function rateSheet(){var r=S.rate;var avg=rateAvg();var sc=r.manual||avg;
+ var h='<div class="row" style="justify-content:space-between"><div class="col grow" style="gap:2px"><h2 class="big" style="color:var(--pink)">BỮA VỪA RỒI THẾ NÀO?</h2><div class="mute">'+esc(r.quanName)+' · '+esc(when(r.at))+'</div></div><button class="btn" style="width:44px;height:44px;padding:0" data-act="close" aria-label="Đóng, để sau">'+ic('x',20)+'</button></div>';
+ h+='<div class="lbl">Chạm sao cho món bạn đã ăn</div><div class="card" style="padding:2px 14px">'+(r.dishes.length?r.dishes.map(function(d,i){return '<div class="col" style="gap:0;padding:8px 0 2px;border-bottom:1px solid #3F3746"><div style="font-weight:600">'+esc(d.name)+(d.score?'':'<span class="mute"> · chưa chấm</span>')+'</div>'+starsHTML(d.score,'dstar',i,d.name)+'</div>';}).join(''):'')+'<div class="row" style="padding:10px 0"><label class="sr" for="nd">Thêm món đã ăn</label><input id="nd" type="text" data-f="newdish" value="'+esc(r.newdish||'')+'" placeholder="Thêm món đã ăn…" autocomplete="off"><button class="btn sm" data-act="adddish">Thêm</button></div></div>';
+ h+='<div class="card col" style="padding:12px 14px"><div class="row" style="gap:12px"><div class="num" style="font-size:40px'+(sc?'':';color:var(--mute)')+'">'+(sc?fmt(sc):'–')+'</div><div class="col grow" style="gap:0"><div style="font-weight:600">Điểm quán</div><div class="mute">'+(r.manual?'Bạn tự chấm':avg?'Trung bình các món đã chấm':'Chấm món, hoặc chạm sao bên dưới')+'</div></div></div>'+starsHTML(Math.round(sc||0),'qstar',0,'quán')+'<div class="row">'+chip('Sẽ quay lại',r.again==='yes','ragain','yes')+chip('Không quay lại',r.again==='no','ragain','no')+'</div>'+(r.again==='no'?'<div class="mute">Quán sẽ bị loại khỏi vòng quay. Gỡ lại được ở trang quán.</div>':'')+'</div>';
+ h+='<div class="mute" style="text-align:center">Không bắt buộc. Chấm một món thôi cũng được.</div><div class="row"><button class="btn pri grow" data-act="saverate">Lưu đánh giá</button><button class="btn" data-act="close">Để sau</button></div>';
+ return sheetWrap('Chấm điểm nhanh',h);}
+function sheetWrap(lab,inner){return '<div class="scrim" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="'+esc(lab)+'"><div class="handle" aria-hidden="true"></div>'+inner+'</div></div>';}
+function rateAvg(){var a=S.rate.dishes.filter(function(d){return d.score;});if(!a.length)return 0;var t=0;a.forEach(function(d){t+=d.score;});return t/a.length;}
+
+/* ---------- render ---------- */
+function render(){S.pending=false;var v=document.getElementById('view'),h='';
+ if(!S.loaded)h='<h1>HÔM NAY ĂN GÌ?</h1><p class="mute" role="status">Đang tải dữ liệu…</p>';
+ else{
+  if(S.dbOk===false)h+='<div class="card mute" role="status" style="background:var(--card2)"><b style="color:var(--ink)">Trình duyệt đang chặn bộ nhớ.</b> Bạn vẫn dùng thử được, nhưng dữ liệu sẽ mất khi đóng trang. Tắt chế độ ẩn danh rồi mở lại.</div>';
+  if(S.tab==='home')h+=S.phase==='done'?homeDone():S.phase==='committed'?homeCommitted():homeIdle();
+  else if(S.tab==='dish')h+=dishView();
+  else if(S.tab==='list')h+=S.detail?detailView():listView();
+  else h+=addView();}
+ v.innerHTML=h;
+ document.getElementById('nav').innerHTML=[['home','wheel','Hôm nay'],['dish','bowl','Món'],['list','list','Quán'],['add','plus','Lưu']].map(function(t){var on=S.tab===t[0];return '<button data-act="tab" data-v="'+t[0]+'" class="'+(on?'on ':'')+(t[0]==='add'?'add':'')+'"'+(on?' aria-current="page"':'')+'><span class="c">'+ic(t[1],22)+'</span>'+t[2]+'</button>';}).join('');
+ var L='';if(S.sheet==='filter')L+=filterSheet();if(S.sheet==='rate'&&S.rate)L+=rateSheet();if(S.sheet==='imp'&&S.imp)L+=impSheet();if(S.sheet==='dish'&&S.dish)L+=dishSheet();
+ if(S.work)L+='<div class="snack" role="status" style="bottom:150px"><span class="grow" id="work">'+esc(S.work)+'</span></div>';
+ if(S.snack)L+='<div class="snack" role="status"><span class="grow">'+esc(S.snack.t)+'</span>'+(S.snack.undo?'<button class="btn sm" data-act="snackundo">Hoàn tác</button>':'')+'</div>';
+ document.getElementById('layer').innerHTML=L;}
+var snackT=null;
+function snack(t,undo){S.snack={t:t,undo:undo||null};clearTimeout(snackT);snackT=setTimeout(function(){S.snack=null;soft();},undo?6000:3500);render();}
+function saveF(){ls('hnag-f',S.f);}
+function resetSpin(){S.phase='idle';S.result=null;S.cat=null;S.commit=null;}
+
+/* ---------- actions ---------- */
+function spin(){if(S.busy||!S.cats||S.cats.length<2)return;var disc=document.getElementById('disc'),ptr=document.getElementById('ptr'),st=document.getElementById('status');if(!disc)return;
+ S.busy=true;var n=S.cats.length,step=360/n,i=Math.floor(Math.random()*n);var jit=(Math.random()-0.5)*step*0.6;
+ S.rot=Math.ceil(S.rot/360)*360+1800+(360-(i*step+step/2))+jit;
+ var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches,ms=reduce?0:2600;
+ disc.style.transition='transform '+ms+'ms cubic-bezier(0.12,0.7,0.1,1)';disc.style.transform='rotate('+S.rot+'deg)';
+ if(ptr&&!reduce){ptr.style.animation='tick 130ms ease-in-out 18';}
+ if(st)st.textContent='ĐANG QUAY…';
+ var cat=S.cats[i];
+ setTimeout(function(){S.busy=false;S.cat=cat;S.skip=[];S.result=pick(cands().filter(function(q){return q.form===cat;}));S.phase=S.result?'done':'idle';render();},ms+150);}
+function commit(q){var b={id:uid('b'),quanId:q.id,quanName:q.name,at:Date.now(),rated:false,dismissed:false};S.result=q;S.commit=b;S.phase='committed';S.tab='home';S.detail=null;saveB(b);render();window.scrollTo(0,0);}
+function openRate(b){var q=qById(b.quanId);S.rate={buaId:b.id,quanId:b.quanId,quanName:b.quanName,at:b.at,dishes:(q&&q.dishes||[]).map(function(d){return {name:d.name,score:0};}),manual:0,again:q&&q.again==='yes'?'yes':null,newdish:''};S.sheet='rate';render();}
+function saveRate(){var r=S.rate,q=qById(r.quanId),b=S.bua.find(function(x){return x.id===r.buaId;});var sc=r.manual||rateAvg();
+ if(q){q=JSON.parse(JSON.stringify(q));q.dishes=q.dishes||[];
+  r.dishes.forEach(function(d){if(!d.score)return;var e=q.dishes.find(function(x){return x.name.toLowerCase()===d.name.toLowerCase();});if(e){var t=e.score?(e.times||1):0;e.score=Math.round(((e.score||0)*t+d.score)/(t+1)*10)/10;e.times=t+1;}else q.dishes.push({name:d.name,score:d.score,times:1});});
+  var v=q.visits||0;if(sc)q.score=Math.round(((q.score&&v?q.score*v:0)+sc)/((q.score&&v?v:0)+1)*10)/10;q.visits=v+1;q.lastVisit=r.at;if(r.again)q.again=r.again;q.wish=false;saveQ(q);}
+ if(b){b=Object.assign({},b,{rated:true,score:sc?Math.round(sc*10)/10:0});saveB(b);}
+ S.sheet=null;S.rate=null;if(S.phase==='committed')resetSpin();
+ snack(r.again==='no'?'Đã lưu. Quán bị loại khỏi vòng quay.':r.again==='yes'?'Đã lưu. Quán vào Yêu thích.':'Đã lưu đánh giá.');}
+var SEEDS=[['Lẩu Thái (mẫu)','Bình Thạnh','Thái','Lẩu','Quán ăn',['Muốn quẩy'],200,350,'16:00','23:00'],['Bún bò (mẫu)','Quận 1','Việt','Bún & phở','Vỉa hè',['Ăn nhẹ'],0,100,'06:00','21:00'],['Cơm tấm (mẫu)','Bình Thạnh','Việt','Cơm','Quán ăn',['Ăn nhẹ','Chill'],0,100,'17:00','23:30'],['Nướng Hàn (mẫu)','Quận 3','Hàn','Nướng','Nhà hàng',['Muốn quẩy'],200,350,'11:00','22:00'],['Ramen (mẫu)','Quận 1','Nhật','Mì & hủ tiếu','Nhà hàng',['Chill'],100,200,'11:00','22:00'],['Tiệm chè (mẫu)','Bình Thạnh','Việt','Chè & kem','Tiệm dessert',['Chill'],0,50,'14:00','22:30']];
+function seed(){var t=Date.now();SEEDS.forEach(function(s,i){saveQ({id:uid('q')+i,name:s[0],area:s[1],cuisine:s[2],form:s[3],type:s[4],moods:s[5],pmin:s[6],pmax:s[7],open:s[8],close:s[9],created:t+i,visits:0,dishes:[]});});render();}
+
+document.addEventListener('click',function(ev){var el=ev.target.closest('[data-act]');if(!el)return;var a=el.getAttribute('data-act'),v=el.getAttribute('data-v'),id=el.getAttribute('data-id');
+ if(a==='scrim'){if(ev.target===el){S.sheet=null;S.imp=null;render();}return;}
+ if(a!=='del')S.delArm=null;
+ switch(a){
+ case 'tab':S.tab=v;S.detail=null;if(v==='add'&&!(S.draft&&S.draft.id))S.draft=S.draft||newDraft();if(v!=='add'&&S.draft&&S.draft.id)S.draft=null;render();window.scrollTo(0,0);break;
+ case 'mood':S.f.mood=S.f.mood===v?null:v;saveF();render();break;
+ case 'price':S.f.price=S.f.price===+v?null:+v;saveF();render();break;
+ case 'sheet':S.sheet=v;render();break;
+ case 'close':if(S.sheet==='imp')S.imp=null;S.sheet=null;render();break;
+ case 'implist':var any=S.imp.items.some(function(x){return x.list===v&&x.on;});S.imp.items.forEach(function(x){if(x.list===v)x.on=!any;});render();break;
+ case 'impsave':impSave();break;
+ case 'export':exportData();break;
+ case 'oksug':var oq=qById(id);if(oq&&oq.sug){saveQ(applySug(oq));render();}break;
+ case 'okall':var al=S.quan.filter(function(q){return !q.form&&q.sug&&q.sug.food&&q.sug.form;});S.busy=true;runQueue(al,function(q){return saveQ(applySug(q));},'Đang duyệt').then(function(){S.busy=false;snack('Đã đưa '+al.length+' quán vào vòng quay.');});break;
+ case 'delnow':var xq=qById(id);delQ(id);snack('Đã xóa "'+(xq?xq.name:'quán')+'".',xq);break;
+ case 'fmulti':var p=v.split('|'),arr=S.f[p[0]],ix=arr.indexOf(p[1]);if(ix<0)arr.push(p[1]);else arr.splice(ix,1);saveF();render();break;
+ case 'farea':S.f.area=S.f.area===v?null:v;saveF();render();break;
+ case 'fopen':S.f.open=!S.f.open;saveF();render();break;
+ case 'fclear':S.f.cuisine=[];S.f.type=[];S.f.group=[];S.f.area=null;S.f.open=false;saveF();render();break;
+ case 'unf':var k=el.getAttribute('data-k');if(k==='cuisine'||k==='type'||k==='group')S.f[k]=S.f[k].filter(function(x){return x!==v;});else if(k==='open')S.f.open=false;else S.f[k]=null;saveF();render();break;
+ case 'spin':spin();break;
+ case 'skipwheel':S.skip=[];S.cat=null;S.result=pick(cands());if(S.result){S.cat=S.result.form;S.phase='done';}render();break;
+ case 'fav':var fv=S.quan.filter(function(q){return ready(q)&&q.again==='yes';});S.skip=[];S.result=pick(fv);if(S.result){S.cat=null;S.phase='done';render();}else snack('Chưa có quán quen nào. Gắn "Sẽ quay lại" khi chấm điểm để có.');break;
+ case 'other':if(S.result)S.skip.push(S.result.id);var pool=S.cat?cands().filter(function(q){return q.form===S.cat;}):S.quan.filter(function(q){return ready(q)&&q.again==='yes';});var nx=pick(pool);if(nx){S.result=nx;render();}else{S.skip=[];snack('Hết quán khác trong nhóm này rồi. Thử Quay lần nữa.');}break;
+ case 'again':resetSpin();render();setTimeout(spin,60);break;
+ case 'reset':resetSpin();render();break;
+ case 'commit':if(S.result)commit(S.result);break;
+ case 'commitq':var cq=qById(id);if(cq){S.cat=null;commit(cq);}break;
+ case 'undo':if(S.commit){delB(S.commit.id);S.commit=null;S.phase=S.result?'done':'idle';render();}break;
+ case 'rate':var bb=S.bua.find(function(x){return x.id===id;});if(bb)openRate(bb);break;
+ case 'later':var lb=S.bua.find(function(x){return x.id===id;});if(lb){saveB(Object.assign({},lb,{dismissed:true}));render();}break;
+ case 'dstar':var di=+el.getAttribute('data-i'),dn=+el.getAttribute('data-n');S.rate.dishes[di].score=S.rate.dishes[di].score===dn?0:dn;render();break;
+ case 'qstar':var qn=+el.getAttribute('data-n');S.rate.manual=S.rate.manual===qn?0:qn;render();break;
+ case 'ragain':S.rate.again=S.rate.again===v?null:v;render();break;
+ case 'adddish':var nm=(S.rate.newdish||'').trim();if(nm){S.rate.dishes.push({name:nm.slice(0,80),score:0});S.rate.newdish='';render();var ni=document.getElementById('nd');if(ni)ni.focus();}break;
+ case 'saverate':saveRate();break;
+ case 'seg':S.seg=v;render();break;
+ case 'reshuffle':S.ck=null;render();break;
+ case 'dg':S.d.group=v;S.d.type='';S.d.n=24;render();break;
+ case 'dp':S.d.price=S.d.price===+v?null:+v;S.d.n=24;render();break;
+ case 'ds':S.d.sort=v;render();break;
+ case 'dmine':S.d.mine=!S.d.mine;S.d.n=24;render();break;
+ case 'dmore':S.d.n+=24;render();break;
+ case 'dish':S.dish=S.dl&&S.dl[+el.getAttribute('data-i')];if(S.dish){S.sheet='dish';render();}break;
+ case 'sort':S.sort=v;render();break;
+ case 'open':S.sheet=null;S.tab='list';S.detail=id;render();window.scrollTo(0,0);break;
+ case 'back':S.detail=null;render();break;
+ case 'edit':S.draft=newDraft(qById(id));if(S.draft.sug){if(!S.draft.form&&S.draft.sug.food){S.draft.form=S.draft.sug.form;S.draft.cuisine=S.draft.cuisine||S.draft.sug.cuisine;S.draft.type=S.draft.type||S.draft.sug.type;}delete S.draft.sug;}S.draft.moods=S.draft.moods||[];S.tab='add';S.detail=null;render();window.scrollTo(0,0);break;
+ case 'canceledit':var bid=S.draft&&S.draft.id;S.draft=null;S.tab='list';S.detail=bid;render();break;
+ case 'dset':var ps=v.split('|'),d=S.draft;if(ps[0]==='moods'){var mi=d.moods.indexOf(ps[1]);if(mi<0)d.moods.push(ps[1]);else d.moods.splice(mi,1);}else{d[ps[0]]=d[ps[0]]===ps[1]?'':ps[1];if(ps[0]==='form'){d.pmin=null;d.pmax=null;}}render();break;
+ case 'dprice':var bs=SWEET.indexOf(S.draft.form)>=0?DRINK:FOOD,bd=bs[+v];if(S.draft.pmin===bd[0]&&S.draft.pmax===bd[1]){S.draft.pmin=null;S.draft.pmax=null;}else{S.draft.pmin=bd[0];S.draft.pmax=bd[1];}render();break;
+ case 'saveq':var dr=S.draft;if(!dr||!dr.name.trim())break;if(v==='full'&&!dr.form)break;var q=Object.assign({},dr);if(/^(Đã lấy tên|Link này)/.test(q.note||''))delete q.note;delete q.sug;q.name=q.name.trim().slice(0,80);q.area=(q.area||'').trim().slice(0,40);var isNew=!q.id;if(isNew){q.id=uid('q');q.created=Date.now();q.visits=0;q.dishes=[];}if(v==='quick'){q.form='';}
+  saveQ(q);S.draft=isNew?newDraft():null;if(isNew){snack(q.form?'Đã lưu "'+q.name+'" vào vòng quay.':'Đã lưu "'+q.name+'" vào Hộp chờ.');}else{S.tab='list';S.detail=q.id;snack('Đã lưu thay đổi.');}window.scrollTo(0,0);break;
+ case 'unban':var uq=qById(S.detail);if(uq){saveQ(Object.assign({},uq,{again:null}));render();}break;
+ case 'del':if(S.delArm===id){var dq=qById(id);delQ(id);S.delArm=null;S.detail=null;snack('Đã xóa "'+(dq?dq.name:'quán')+'".',dq);}else{S.delArm=id;render();}break;
+ case 'snackundo':if(S.snack&&S.snack.undo){saveQ(S.snack.undo);S.snack=null;render();}break;
+ case 'seed':seed();break;
+ }});
+document.addEventListener('input',function(ev){var el=ev.target,f=el.getAttribute&&el.getAttribute('data-f');if(!f)return;
+ if(f==='q'){S.q=el.value;clearTimeout(S.qt);S.qt=setTimeout(function(){var pos=el.selectionStart;render();var n=document.getElementById('q');if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(e){}}},250);return;}
+ if(f==='dq'){S.d.q=el.value;S.d.n=24;clearTimeout(S.qt);S.qt=setTimeout(function(){var pos=el.selectionStart;render();var n=document.getElementById('dq');if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(e){}}},250);return;}
+ if(f==='dtype'){S.d.type=el.value;S.d.n=24;render();return;}
+ if(f==='newdish'){S.rate.newdish=el.value;return;}
+ if(f==='imp'){S.imp.items[+el.getAttribute('data-i')].on=el.checked;var bt=document.querySelector('[data-act=impsave]');if(bt){var c=S.imp.items.filter(function(x){return x.on;}).length;bt.textContent='Nhập '+c+' quán vào Hộp chờ';bt.disabled=!c;}return;}
+ if(f==='import'||f==='backup')return;
+ var d=S.draft;if(!d)return;
+ if(f==='wish'){d.wish=el.checked;return;}
+ if(f==='name'){var val=el.value;if(/^https?:\/\//i.test(val.trim())){var pm=parseMaps(val.trim());d.mapUrl=val.trim();if(pm){d.name=pm.name;d.lat=pm.lat;d.lng=pm.lng;d.note='Đã lấy tên quán từ link. Kiểm tra lại tên rồi lưu.';}else{d.name='';d.note='Link này không chứa tên quán (thường là link rút gọn). Mình đã giữ link để chỉ đường, bạn gõ tên quán giúp.';}render();var ni=document.querySelector('[data-f=name]');if(ni)ni.focus();return;}
+  var was=!!d.name.trim();d.name=val;if(was!==!!val.trim()){var pos=el.selectionStart;render();var n2=document.querySelector('[data-f=name]');if(n2){n2.focus();try{n2.setSelectionRange(pos,pos);}catch(e){}}}return;}
+ d[f]=el.value;});
+document.addEventListener('change',function(ev){var el=ev.target,f=el.getAttribute&&el.getAttribute('data-f');if(f==='import'&&el.files&&el.files.length)handleImport(el.files);if(f==='backup'&&el.files&&el.files[0])importBackup(el.files[0]);});
+document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&S.sheet){S.sheet=null;render();}if(ev.key==='Enter'&&ev.target.id==='nd'){ev.preventDefault();var b=document.querySelector('[data-act=adddish]');if(b)b.click();}});
+document.addEventListener('focusout',function(){setTimeout(function(){if(S.pending)soft();},0);});
+render();init();
+})();
+</script>
+</body>
+</html>
