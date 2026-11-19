@@ -42,7 +42,7 @@ export function priceTxt(p){
   return p.pmin + '–' + (p.pmax >= 9999 ? '' : p.pmax) + 'k';
 }
 
-export function defaultFilters(){ return { mood:null, price:null, priceMin:null, priceMax:null, cuisine:[], type:[], group:[], forms:[], area:null, radius:null, open:true, plan:false, meal:true, occasion:[], weather:[] }; }
+export function defaultFilters(){ return { mood:null, price:null, priceMin:null, priceMax:null, cuisine:[], type:[], group:[], forms:[], who:null, area:null, radius:null, open:true, plan:false, meal:true, occasion:[], weather:[] }; }
 
 // ignore: các khóa bộ lọc cần bỏ qua (để đếm "bỏ cái này còn bao nhiêu quán")
 export function matches(p, f, ignore = {}, opts = {}){
@@ -63,6 +63,7 @@ export function matches(p, f, ignore = {}, opts = {}){
   if (f.type.length && !ignore.type && !f.type.includes(t.type)) return false;
   if (f.group.length && !ignore.group && !f.group.includes(groupOf(t.form))) return false;
   if (f.forms && f.forms.length && !ignore.forms && !f.forms.includes(t.form)) return false;
+  if (f.who && !ignore.who){ const w = t.who || []; if (w.length && !w.includes(f.who)) return false; }
   if (f.area && !ignore.area && (p.address || '').toLowerCase().indexOf(f.area.toLowerCase()) < 0 && (t.area || '') !== f.area) return false;
   if (f.radius && !ignore.radius && G.pos){ const d = dist(p); if (d != null && d > f.radius) return false; }
   if (f.open && !f.plan && !ignore.open && openNow(p) === false) return false;
@@ -120,7 +121,7 @@ export function comboFor(main){
     if (again(p) === 'yes') s *= 1.3;
     return { p, s, d };
   }).sort((a, b) => b.s - a.s);
-  return scored.slice(0, 2);
+  return scored;
 }
 
 // Điểm món: của tôi và trung bình nhóm

@@ -153,3 +153,5 @@ body.noauth nav{display:none}
   .scrim{align-items:center}
   .map{height:260px}
 }
+.combo-spin{display:flex;align-items:center;justify-content:center;min-height:84px;text-align:center}
+.combo-spin .num{font-size:24px;line-height:1.2}

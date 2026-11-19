@@ -99,6 +99,7 @@ function activeFilters(){
   if (f.price != null){ const b = L.foodBands()[f.price]; if (b) a.push(['price', null, C.bandLabel(b)]); }
   if (f.priceMin != null) a.push(['priceMin', null, f.priceMin + '–' + f.priceMax + 'k']);
   ['cuisine','type','group','forms','occasion','weather'].forEach(k => f[k].forEach(v => a.push([k, v, k === 'cuisine' ? 'Món ' + v : v])));
+  if (f.who) a.push(['who', f.who, 'Đi ' + f.who.toLowerCase()]);
   if (f.area) a.push(['area', f.area, f.area]);
   if (f.radius) a.push(['radius', null, 'Trong ' + f.radius + ' km']);
   if (f.open && !f.plan) a.push(['open', null, 'Đang mở']);
@@ -129,8 +130,15 @@ function homeHead(){
 function homeIdle(){
   let h = reminderToast() + homeHead();
   const rd = S.places.filter(L.ready);
-  if (!S.places.length) return h + '<div class="mute big-lead">Vòng quay chỉ chọn trong những quán ' + (isShared() ? 'của nhóm' : 'bạn đã lưu') + '. Lưu khoảng 10–15 quán quen là dùng được ngay.</div><button class="btn pri" data-act="tab" data-v="luu">' + ic('plus', 18) + 'Lưu quán đầu tiên</button>' + migrateCard() + '<button class="btn" data-act="seed">Thêm 6 quán mẫu để xem thử</button>';
-  if (!rd.length) return h + '<div class="card col"><b>Chưa có quán nào gắn tag</b><div class="mute">Vòng quay cần biết quán thuộc loại món gì. Mở Hộp chờ ở tab Lưu và duyệt tag cho quán.</div><button class="btn pri" data-act="tab" data-v="luu">Mở Hộp chờ</button></div>';
+  if (!rd.length){
+    U.free = true; const cats = C.FREE_WHEEL[C.mealNow()]; U.cats = cats;
+    h += '<div class="mute">' + (S.places.length ? 'Quán đã lưu chưa được gắn tag nên vòng quay đang chọn loại món giúp bạn. Duyệt tag ở Hộp chờ để app chọn đúng quán của bạn.' : 'Chưa có quán nào trong danh sách, vòng quay chọn giúp loại món hợp bữa ' + C.mealNow().toLowerCase() + ', rồi bạn tìm quán gần trên Google Maps.') + '</div>';
+    h += wheelHTML(cats, cats.length).replace(cats.length + ' LOẠI MÓN CÒN HỢP', 'HỢP BỮA ' + C.mealNow().toUpperCase()) + '<div class="status" id="status" role="status">QUAY LOẠI MÓN</div>';
+    h += '<div class="row"><button class="btn sm grow pri" data-act="tab" data-v="luu">' + ic('plus', 16) + (S.places.length ? 'Mở Hộp chờ' : 'Lưu quán quen') + '</button>' + (S.places.length ? '' : '<button class="btn sm grow" data-act="seed">Thêm 6 quán mẫu</button>') + '</div>' + migrateCard();
+    return h;
+  }
+  U.free = false;
+  h += '<div class="col g6"><h2 class="lbl">Đi với ai</h2><div class="hscroll">' + C.WHO.map(w => chip(w, U.f.who === w, 'who', w)).join('') + '</div></div>';
   h += '<div class="col g6"><h2 class="lbl">Mood hôm nay</h2><div class="wrap">' + C.MOOD.map(m => chip(m, U.f.mood === m, 'mood', m)).join('') + '</div></div>';
   const af = activeFilters().filter(a => !['mood','price','meal','open'].includes(a[0])).length;
   h += '<div class="col g6"><h2 class="lbl">Ngân sách và bộ lọc</h2><div class="wrap">' + L.foodBands().slice(0, 4).map((b, i) => chip(C.bandLabel(b), U.f.price === i, 'price', i)).join('') + '<button type="button" class="chip' + (af ? ' on' : '') + '" data-act="sheet" data-v="filter">' + ic('filter', 16, 2.2) + 'Tất cả bộ lọc' + (af ? ' · ' + af : '') + '</button>' + suggestChips() + '</div></div>';
@@ -165,6 +173,17 @@ function noMatch(){
 }
 function findNew(q){ return '<div class="col g6"><a class="btn" target="_blank" rel="noopener" href="' + mapsSearch(q) + '">' + ic('search', 18) + 'Tìm quán mới trên Google Maps</a><a class="btn ghost" target="_blank" rel="noopener" href="' + tiktokSearch(q) + '">' + ic('fire', 18) + 'Xem trên TikTok</a><div class="mute center">Ưng quán nào thì bấm Chia sẻ, dán link về ô Lưu.</div></div>'; }
 function summaryLine(n){ const a = activeFilters().filter(x => ['mood','price','priceMin','radius','area'].includes(x[0])).map(x => x[2]); if (n != null) a.push(n + ' quán hợp'); return a.join(' · '); }
+function homeFree(){
+  const t = U.cat; const dishes = C.CAT.filter(x => x.type === t).sort(() => Math.random() - 0.5).slice(0, 4);
+  const mine = S.places.filter(p => L.tagsOf(p).form === t || (p.sug && p.sug.form === t));
+  const q = (t === 'Ăn vặt đường phố' ? 'ăn vặt' : t.replace(' & ', ' ')) + (U.f.area ? ' ' + U.f.area : ' gần đây');
+  let h = '<h1>QUAY RA: ' + esc((C.SHORT[t] || t).toUpperCase()) + '</h1><div class="mute">Gợi ý vài món loại này, giá tham khảo mỗi phần:</div>';
+  h += '<div class="card col pop" style="gap:0;padding:4px 14px">' + dishes.map((d, i) => '<div class="mrow' + (i < dishes.length - 1 ? ' bb' : '') + '"><span class="grow b">' + esc(d.name) + '</span><span class="sm b">~' + d.price + 'k</span></div>').join('') + '</div>';
+  if (mine.length) h += '<h2 class="lbl">Quán bạn đã lưu thuộc loại này</h2><div class="col">' + mine.slice(0, 3).map((p, i) => qcard(p, i)).join('') + '</div>';
+  h += '<a class="btn pri" target="_blank" rel="noopener" href="' + mapsSearch(q) + '">' + ic('pin', 18) + 'Tìm quán ' + esc((C.SHORT[t] || t).toLowerCase()) + ' gần đây</a><a class="btn" target="_blank" rel="noopener" href="' + tiktokSearch(q) + '">' + ic('fire', 18) + 'Xem review trên TikTok</a><div class="mute center">Ưng quán nào thì bấm Chia sẻ trên Maps, dán link vào tab Lưu. Lần sau vòng quay sẽ chọn đúng quán của bạn.</div>';
+  h += '<div class="row"><button class="btn sm grow" data-act="again">Quay lần nữa</button><button class="btn sm grow ghost" data-act="reset">Về vòng quay</button></div>';
+  return h;
+}
 function homeDone(){
   const p = U.result; if (!p) return homeIdle();
   const gd = L.goodDishes(p).slice(0, 2).map(x => x.d.name).join(', ');
@@ -186,8 +205,16 @@ function homeCommitted(){
   let h = '<h1>ĐÃ CHỐT, ĐI THÔI!</h1><div class="card col pop" style="gap:8px">' + hero(p, 100) + '<div class="big-name">' + esc(p.name) + '</div><div class="mute">' + esc(metaOf(p)) + '</div>';
   if (gd) h += '<div class="row"><span class="tag">NÊN GỌI</span><span class="sm b">' + esc(gd) + '</span></div>';
   h += '<div class="row"><a class="btn pri grow" target="_blank" rel="noopener" href="' + esc(mapsHref(p)) + '">' + ic('pin', 18) + 'Chỉ đường</a>' + (isShared() || navigator.share ? '<button class="btn" data-act="sharepick">' + ic('share', 18) + (isShared() ? 'Gửi cho nhóm' : 'Gửi') + '</button>' : '') + '</div></div>';
-  const nx = L.comboFor(p);
-  if (nx.length) h += '<h2 class="lbl">Ăn xong đi tiếp</h2><div class="col">' + nx.map((x, i) => qcard(x.p, i + 1, (L.formOf(x.p) || '') + (x.d != null ? ' · cách quán ăn ' + L.distTxt(x.d) : '') + (L.again(x.p) === 'yes' ? ' · quán quen' : ''))).join('') + '</div>';
+  const all = L.comboFor(p);
+  if (all.length){
+    const c = U.combo && all.find(x => x.p.id === U.combo) || null;
+    const sub = x => (L.formOf(x.p) || '') + (x.d != null ? ' · cách quán ăn ' + L.distTxt(x.d) : '') + (L.again(x.p) === 'yes' ? ' · quán quen' : '');
+    h += '<div class="row between"><h2 class="lbl">Ăn xong đi tiếp</h2><span class="sticker">COMBO ĂN + UỐNG</span></div>';
+    if (U.comboSpin) h += '<div class="card combo-spin" role="status"><div class="num l ink" id="combospin">' + esc(U.comboSpin) + '</div></div>';
+    else if (c) h += '<div class="pop">' + qcard(c.p, 1, sub(c)) + '</div>';
+    h += '<button class="btn" data-act="combospin"' + (U.comboSpin ? ' disabled' : '') + '>' + ic('wheel', 18) + (c ? 'Quay chặng hai lần nữa' : 'Quay dessert, đồ uống chặng hai') + '</button>';
+    if (!c && !U.comboSpin) h += '<div class="mute">' + all.length + ' quán hợp, ưu tiên gần quán ăn và quán quen.</div>';
+  }
   h += '<div class="mute">Khoảng ' + (L.prefs().remindHours ?? 3) + ' giờ nữa, khi bạn mở lại app sẽ có một lời nhắc nhỏ hỏi bữa ăn thế nào. Muốn chấm ngay thì vào Quán › Gần đây.</div>';
   h += '<div class="card row" style="background:var(--card2)"><div class="grow sm b">Chốt nhầm quán?</div><button class="btn sm" data-act="undo">Hoàn tác</button></div><button class="btn sm ghost" data-act="reset">Về màn hình quay</button>';
   return h;
@@ -278,7 +305,7 @@ function detailView(){
     (L.priceTxt(p) ? '<div class="sticker ink" style="position:absolute;right:0;top:18px;transform:rotate(8deg)">' + esc(L.priceTxt(p).toUpperCase()) + ' / NGƯỜI</div>' : '') +
     '<div class="sticker" style="position:absolute;left:8px;bottom:6px;transform:rotate(-6deg)">' + esc(stickers(p)[0]) + '</div></div>';
   h += '<div class="col g6"><h1 class="pname">' + esc(p.name) + '</h1><div class="mute">' + esc([p.address || t.area, L.distTxt(L.dist(p)), L.openNow(p) === true ? 'mở đến ' + p.close_time : L.openNow(p) === false ? 'đang đóng · mở ' + p.open_time : ''].filter(Boolean).join(' · ') || 'Chưa có địa chỉ') + '</div>';
-  const tg = [t.cuisine ? 'Món ' + t.cuisine : '', t.form, t.type].concat(t.mood || [], t.meal || [], t.occasion || [], t.weather || []).filter(Boolean);
+  const tg = [t.cuisine ? 'Món ' + t.cuisine : '', t.form, t.type].concat(t.mood || [], (t.who || []).map(w => 'Đi ' + w.toLowerCase()), t.meal || [], t.occasion || [], t.weather || []).filter(Boolean);
   if (tg.length) h += '<div class="wrap">' + tg.map(x => '<span class="pill">' + esc(x) + '</span>').join('') + '</div>';
   h += '</div>';
   if (p.status === 'inbox') h += '<div class="card row" style="background:var(--card2)"><div class="grow sm b">Quán đang ở Hộp chờ, chưa vào vòng quay.</div><button class="btn sm pri" data-act="edit" data-id="' + esc(p.id) + '">Gắn tag</button></div>';
@@ -305,7 +332,7 @@ function detailView(){
   else h += '<div class="card" style="padding:4px 14px">' + shown.map((x, i) => { const s = x.st.my ?? x.st.grp; const bad = s != null && s <= 2; return '<div class="mrow' + (i < shown.length - 1 ? ' bb' : '') + '"><div class="col grow" style="gap:3px;min-width:0"><div class="row b' + (bad ? ' dimtxt' : '') + '" style="flex-wrap:wrap">' + esc(x.d.name) + (s >= 4 ? '<span class="tag">NÊN GỌI</span>' : bad ? '<span class="tag out">NÊN TRÁNH</span>' : '') + '</div><div class="mute">' + (x.st.my != null ? 'Bạn chấm ' + fmt(x.st.my) + ' · đã gọi ' + x.st.times + ' lần' : x.st.grp != null ? 'Nhóm chấm ' + fmt(x.st.grp) + ' · bạn chưa thử' : 'Chưa ai thử') + '</div></div><div class="sm b' + (bad ? ' dimtxt' : '') + '">' + esc(x.d.price || '') + '</div></div>'; }).join('') + '</div>';
   h += '<form class="row" data-form="adddish"><label class="sr" for="newdish">Thêm món vào menu</label><input id="newdish" name="n" type="text" placeholder="Thêm món vào menu…" autocomplete="off"><input name="p" type="text" placeholder="Giá" style="width:96px" autocomplete="off"><button class="btn sm" type="submit">Thêm</button></form>';
   // combo
-  const nx = L.comboFor(p);
+  const nx = L.comboFor(p).slice(0, 2);
   if (nx.length) h += nx.slice(0, 1).map(x => '<button class="card row linkish" style="padding:12px 14px;gap:12px;text-align:left;width:100%" data-act="open" data-id="' + esc(x.p.id) + '">' + blob(x.p, 44, 1) + '<span class="col grow" style="gap:2px"><span class="lbl">Ăn xong đi tiếp</span><span class="b">' + esc(x.p.name) + (x.d != null ? ' · cách ' + L.distTxt(x.d) : '') + '</span></span>' + ic('next', 20, 2.2) + '</button>').join('');
   // lịch sử
   const hist = S.meals.filter(m => m.place_id === p.id).sort((a, b) => new Date(b.at) - new Date(a.at));
@@ -359,7 +386,7 @@ function editView(){
   h += '<div class="card col"><label class="f">Tên quán<input type="text" data-d="name" value="' + esc(d.name) + '" autocomplete="off"></label><label class="f">Địa chỉ<input type="text" data-d="address" value="' + esc(d.address || '') + '" autocomplete="off"></label><label class="f">Khu vực (quận, phường)<input type="text" data-dt="area" value="' + esc(t.area || '') + '" list="areas" placeholder="Ví dụ: Bình Thạnh" autocomplete="off"></label><datalist id="areas">' + L.areasList().map(a => '<option value="' + esc(a) + '">').join('') + '</datalist><label class="f">Link Google Maps<input type="url" data-d="map_url" value="' + esc(d.map_url || '') + '" placeholder="Dán link để có tọa độ và nút Chỉ đường" autocomplete="off"></label>' + (d.lat != null ? '<div class="mute">Đã có tọa độ ' + d.lat.toFixed(4) + ', ' + d.lng.toFixed(4) + '</div>' : '') + '</div>';
   const sec = (title, arr, key, multi) => '<div class="col g6"><h2 class="lbl">' + title + '</h2><div class="wrap">' + arr.map(v => chip(esc(v), multi ? (t[key] || []).includes(v) : t[key] === v, 'dset', key + '|' + (multi ? 'm' : 's') + '|' + v)).join('') + '</div></div>';
   h += '<div class="col g6"><h2 class="lbl">Loại món · là ô trên vòng quay</h2>' + C.GNAMES.map(g => '<div class="mute" style="margin-top:4px">' + g + '</div><div class="wrap">' + C.GROUPS[g].map(v => chip(esc(v), t.form === v, 'dset', 'form|s|' + v)).join('') + '</div>').join('') + '</div>';
-  h += sec('Ẩm thực', [...C.CUISINE, ...(extra.cuisine || [])], 'cuisine') + sec('Loại hình quán', [...C.TYPE, ...(extra.type || [])], 'type') + sec('Hợp với mood', [...C.TAG_MOOD.filter(m => m !== 'Khám phá'), ...(extra.mood || [])], 'mood', true) + sec('Bữa', C.MEAL, 'meal', true) + sec('Dịp', [...C.OCCASION, ...(extra.occasion || [])], 'occasion', true) + sec('Thời tiết', C.WEATHER, 'weather', true);
+  h += sec('Ẩm thực', [...C.CUISINE, ...(extra.cuisine || [])], 'cuisine') + sec('Loại hình quán', [...C.TYPE, ...(extra.type || [])], 'type') + sec('Hợp với mood', [...C.TAG_MOOD.filter(m => m !== 'Khám phá'), ...(extra.mood || [])], 'mood', true) + sec('Hợp đi với', C.WHO, 'who', true) + sec('Bữa', C.MEAL, 'meal', true) + sec('Dịp', [...C.OCCASION, ...(extra.occasion || [])], 'occasion', true) + sec('Thời tiết', C.WEATHER, 'weather', true);
   h += '<div class="col g6"><h2 class="lbl">Giá mỗi người · thang ' + (sweet ? 'đồ uống, dessert' : 'đồ ăn') + '</h2><div class="wrap">' + bands.map((b, i) => chip(C.bandLabel(b), d.pmin === b[0] && d.pmax === b[1], 'dprice', i)).join('') + '</div><div class="row"><label class="f grow">Từ (nghìn)<input type="number" inputmode="numeric" data-d="pmin" value="' + (d.pmin ?? '') + '"></label><label class="f grow">Đến (nghìn)<input type="number" inputmode="numeric" data-d="pmax" value="' + (d.pmax != null && d.pmax < 9999 ? d.pmax : '') + '"></label></div></div>';
   h += '<div class="row" style="align-items:flex-end"><label class="f grow">Mở cửa<input type="time" data-d="open_time" value="' + esc(d.open_time || '') + '"></label><label class="f grow">Đóng cửa<input type="time" data-d="close_time" value="' + esc(d.close_time || '') + '"></label></div>';
   h += '<label class="f">Ghi chú<input type="text" data-d="note" value="' + esc(d.note || '') + '" autocomplete="off"></label>';
@@ -441,6 +468,7 @@ function filterSheet(){
   const f = U.f, n = L.candidates(f).length, ar = L.areasList();
   const sec = (t, arr, key) => '<div class="col g6"><h2 class="lbl">' + t + '</h2><div class="wrap">' + arr.map(v => chip(esc(v), f[key].includes(v), 'fmulti', key + '|' + v)).join('') + '</div></div>';
   let h = sheetHead('TẤT CẢ BỘ LỌC', 'Lựa chọn được nhớ cho lần sau');
+  h += '<div class="col g6"><h2 class="lbl">Đi với ai</h2><div class="wrap">' + C.WHO.map(w => chip(w, f.who === w, 'who', w)).join('') + '</div><div class="mute">Quán chưa gắn "Hợp đi với" vẫn được tính là hợp.</div></div>';
   h += sec('Nhóm món', C.GNAMES, 'group') + sec('Loại món', C.FORM, 'forms') + sec('Ẩm thực', C.CUISINE, 'cuisine') + sec('Loại hình quán', C.TYPE, 'type') + sec('Dịp', C.OCCASION, 'occasion') + sec('Thời tiết', C.WEATHER, 'weather');
   h += '<div class="col g6"><h2 class="lbl">Ngân sách mỗi người · khoảng tùy ý</h2><div class="row"><label class="f grow">Từ (nghìn)<input type="number" inputmode="numeric" data-ff="priceMin" value="' + (f.priceMin ?? '') + '"></label><label class="f grow">Đến (nghìn)<input type="number" inputmode="numeric" data-ff="priceMax" value="' + (f.priceMax ?? '') + '"></label></div></div>';
   if (ar.length) h += '<div class="col g6"><h2 class="lbl">Khu vực</h2><div class="wrap">' + ar.map(a => chip(esc(a), f.area === a, 'farea', a)).join('') + '</div></div>';
@@ -540,7 +568,7 @@ function render(){
   let h = '';
   if (!S.loaded) h = '<h1>HÔM NAY ĂN GÌ?</h1><p class="mute" role="status">Đang tải dữ liệu…</p>';
   else if (U.sess) h = sessView();
-  else if (U.tab === 'home') h = U.phase === 'done' ? homeDone() : U.phase === 'committed' ? homeCommitted() : homeIdle();
+  else if (U.tab === 'home') h = U.phase === 'free' ? homeFree() : U.phase === 'done' ? homeDone() : U.phase === 'committed' ? homeCommitted() : homeIdle();
   else if (U.tab === 'quan') h = quanView();
   else if (U.tab === 'luu') h = luuView();
   else if (U.tab === 'hot') h = hotView();
@@ -577,7 +605,7 @@ function drawMap(){
 
 // ---------- HÀNH ĐỘNG ----------
 function openPlace(id){ U.back = { tab:U.tab, seg:U.seg }; U.sheet = null; U.tab = 'quan'; U.detail = id; U.delArm = null; render(); scrollTo(0, 0); }
-function resetSpin(){ U.phase = 'idle'; U.result = null; U.cat = null; U.commit = null; U.backups = []; U.skip = []; U.others = 0; U.regular = false; }
+function resetSpin(){ U.combo = null; U.comboSpin = null; U.phase = 'idle'; U.result = null; U.cat = null; U.commit = null; U.backups = []; U.skip = []; U.others = 0; U.regular = false; }
 function showResult(p, cat){ U.result = p; U.cat = cat; U.phase = p ? 'done' : 'idle'; const pool = cat ? L.candidates(U.f).filter(x => L.formOf(x) === cat) : L.candidates(U.f); U.backups = p ? L.pickN(pool, U.f, 2, [...U.skip, p.id]) : []; }
 function spin(){
   if (U.busy || !U.cats || U.cats.length < 2) return;
@@ -590,11 +618,12 @@ function spin(){
   if (st) st.textContent = 'ĐANG QUAY…';
   const cat = U.cats[i];
   setTimeout(() => { const sp = disc.querySelector('span[data-i="' + i + '"]'); if (sp) sp.classList.add('hit'); }, ms);
+  if (U.free){ setTimeout(() => { U.busy = false; U.cat = cat; U.phase = 'free'; render(); scrollTo(0, 0); }, ms + 350); return; }
   setTimeout(() => { U.busy = false; U.skip = []; U.others = 0; U.regular = false; showResult(L.pick(L.candidates(U.f).filter(q => L.formOf(q) === cat), U.f), cat); render(); }, ms + 350);
 }
 function commit(p){
   const m = { id:D.uuid(), group_id:S.gid, place_id:p.id, place_name:p.name, at:new Date().toISOString(), created_by:L.me(), rated:false, dismissed:false, with_users:[] };
-  D.upsert('meals', m); U.result = p; U.commit = m; U.phase = 'committed'; U.tab = 'home'; U.detail = null; U.sess = U.sess && null;
+  D.upsert('meals', m); U.result = p; U.commit = m; U.combo = null; U.phase = 'committed'; U.tab = 'home'; U.detail = null; U.sess = U.sess && null;
   history.replaceState(null, '', location.pathname);
   if (!lsG('hnag2-asked-notif', false) && 'Notification' in window && Notification.permission === 'default'){ lsS('hnag2-asked-notif', true); setTimeout(() => Notification.requestPermission().catch(() => {}), 1200); }
   scheduleNotif(m); render(); scrollTo(0, 0);
@@ -844,18 +873,20 @@ document.addEventListener('click', async ev => {
     case 'fopen': U.f.open = !(U.f.open && !U.f.plan); U.f.plan = false; saveF(); render(); break;
     case 'fplan': U.f.plan = !U.f.plan; saveF(); render(); break;
     case 'fmeal': U.f.meal = !U.f.meal; saveF(); render(); break;
-    case 'fclear': Object.assign(U.f, { cuisine:[], type:[], group:[], forms:[], occasion:[], weather:[], area:null, radius:null, priceMin:null, priceMax:null, open:true, plan:false, meal:true }); saveF(); render(); break;
+    case 'fclear': Object.assign(U.f, { who:null, cuisine:[], type:[], group:[], forms:[], occasion:[], weather:[], area:null, radius:null, priceMin:null, priceMax:null, open:true, plan:false, meal:true }); saveF(); render(); break;
     case 'unf': unFilter(el.dataset.k, v); render(); break;
     case 'spin': spin(); break;
     case 'reshuffle': U.ck = null; render(); break;
     case 'skipwheel': U.skip = []; U.others = 0; U.regular = false; { const p = L.pick(L.candidates(U.f), U.f); showResult(p, null); } render(); break;
     case 'fav': { const r = L.regulars(U.f); if (!r.length){ snack('Chưa có quán quen nào đang mở. Gắn "Sẽ quay lại" khi chấm điểm để có.'); break; } U.regular = true; U.cat = null; U.skip = []; U.result = r[0]; U.backups = r.slice(1); U.phase = 'done'; render(); break; }
     case 'other': { if (U.result) U.skip.push(U.result.id); U.others++; const pool = U.regular ? L.regulars(U.f) : U.cat ? L.candidates(U.f).filter(q => L.formOf(q) === U.cat) : L.candidates(U.f); const nx = L.pick(pool, U.f, U.skip); if (nx){ const keep = U.regular; showResult(nx, U.cat); U.regular = keep; if (keep) U.backups = pool.filter(p => p.id !== nx.id && !U.skip.includes(p.id)).slice(0, 2); render(); } else snack('Hết quán khác trong nhóm này. Thử Quay lần nữa.'); break; }
-    case 'again': resetSpin(); render(); setTimeout(spin, 60); break;
+    case 'again': resetSpin(); render(); scrollTo(0, 0); setTimeout(spin, 80); break;
     case 'reset': resetSpin(); render(); break;
     case 'commit': if (U.result) commit(U.result); break;
     case 'commitq': { const p = P(id); if (p){ U.cat = null; U.backups = []; if (U.sess) closeSession(); commit(p); } break; }
     case 'undo': if (U.commit){ D.remove('meals', { id:U.commit.id }); U.commit = null; U.phase = U.result ? 'done' : 'idle'; render(); } break;
+    case 'combospin': { const all = L.comboFor(U.result); if (!all.length) break; const tot = all.reduce((a, x) => a + x.s, 0); let r = Math.random() * tot, win = all[all.length - 1]; for (const x of all){ r -= x.s; if (r <= 0){ win = x; break; } } const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; if (reduce){ U.combo = win.p.id; render(); break; } let n = 0; const steps = 14; U.comboSpin = all[0].p.name; render(); const tick = () => { n++; const el = $('#combospin'); const x = n >= steps ? win : all[Math.floor(Math.random() * all.length)]; U.comboSpin = x.p.name; if (el) el.textContent = x.p.name; if (navigator.vibrate) navigator.vibrate(6); if (n >= steps){ setTimeout(() => { U.comboSpin = null; U.combo = win.p.id; render(); }, 350); } else setTimeout(tick, 60 + n * 18); }; setTimeout(tick, 60); break; }
+    case 'who': U.f.who = U.f.who === v ? null : v; saveF(); render(); break;
     case 'sharepick': { const p = U.result; shareText('Tối nay ăn ' + p.name + ' nhé!', mapsHref(p)); break; }
     case 'rate': { const m = S.meals.find(x => x.id === id); if (m) openRate(m); break; }
     case 'later': { const m = S.meals.find(x => x.id === id); if (m) D.upsert('meals', { ...m, dismissed:true }); break; }
@@ -875,7 +906,7 @@ document.addEventListener('click', async ev => {
     case 'wish': { const p = P(id); D.upsert('places', { ...p, wish:!p.wish }); break; }
     case 'del': if (U.delArm === id){ const p = P(id); D.remove('places', { id }); U.delArm = null; U.detail = null; snack('Đã xóa "' + (p ? p.name : 'quán') + '".'); } else { U.delArm = id; render(); } break;
     case 'delnow': { const p = P(id); D.remove('places', { id }); snack('Đã xóa "' + (p ? p.name : 'quán') + '".', () => D.upsert('places', p)); break; }
-    case 'edit': { const p = P(id); if (!p) break; const d = JSON.parse(JSON.stringify(p)); d.tags = d.tags || {}; ['mood','meal','occasion','weather'].forEach(k => d.tags[k] = d.tags[k] || []); if (d.sug && d.sug.food){ d.tags.form = d.tags.form || d.sug.form; d.tags.cuisine = d.tags.cuisine || d.sug.cuisine; d.tags.type = d.tags.type || d.sug.type; if (!d.tags.mood.length) d.tags.mood = d.sug.mood || []; if (!d.tags.area && d.sug.area) d.tags.area = d.sug.area; } if (d.name === 'Đang đọc link…') d.name = ''; U.draft = d; U.tab = 'luu'; U.detail = null; render(); scrollTo(0, 0); break; }
+    case 'edit': { const p = P(id); if (!p) break; const d = JSON.parse(JSON.stringify(p)); d.tags = d.tags || {}; ['mood','meal','occasion','weather','who'].forEach(k => d.tags[k] = d.tags[k] || []); if (d.sug && d.sug.food){ d.tags.form = d.tags.form || d.sug.form; d.tags.cuisine = d.tags.cuisine || d.sug.cuisine; d.tags.type = d.tags.type || d.sug.type; if (!d.tags.mood.length) d.tags.mood = d.sug.mood || []; if (!d.tags.area && d.sug.area) d.tags.area = d.sug.area; } if (d.name === 'Đang đọc link…') d.name = ''; U.draft = d; U.tab = 'luu'; U.detail = null; render(); scrollTo(0, 0); break; }
     case 'dset': { const [k, mode, val] = v.split('|'); const t = U.draft.tags; if (mode === 'm'){ t[k] = t[k] || []; const i = t[k].indexOf(val); if (i < 0) t[k].push(val); else t[k].splice(i, 1); } else { t[k] = t[k] === val ? '' : val; if (k === 'form' && C.SWEET.includes(val) !== C.SWEET.includes(U.draft._prevForm || '')){ U.draft.pmin = null; U.draft.pmax = null; } U.draft._prevForm = val; } render(); break; }
     case 'dprice': { const bs = C.SWEET.includes(U.draft.tags.form) ? L.drinkBands() : L.foodBands(); const b = bs[+v]; if (U.draft.pmin === b[0] && U.draft.pmax === b[1]){ U.draft.pmin = null; U.draft.pmax = null; } else { U.draft.pmin = b[0]; U.draft.pmax = b[1]; } render(); break; }
     case 'saveedit': case 'saveinbox': { const d = U.draft; const row = { ...d }; delete row._prevForm; delete row.isNew; row.name = row.name.trim().slice(0, 80); if (a === 'saveedit') { row.status = 'active'; row.sug = null; } if (row.map_url && row.lat == null){ const pm = parseMapsUrl(row.map_url); if (pm && pm.lat != null){ row.lat = pm.lat; row.lng = pm.lng; } } if (row.pmin != null && row.pmin !== '') row.pmin = +row.pmin; else row.pmin = null; if (row.pmax != null && row.pmax !== '') row.pmax = +row.pmax; else row.pmax = row.pmin != null ? 9999 : null; D.upsert('places', row); U.draft = null; if (a === 'saveedit' && d.status === 'inbox'){ snack('"' + row.name + '" đã vào vòng quay.'); } else { U.tab = 'quan'; U.detail = row.id; snack('Đã lưu thay đổi.'); } render(); break; }

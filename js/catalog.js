@@ -16,6 +16,9 @@ export const TAG_MOOD = ['Muốn quẩy','Chill','Khám phá','Ăn nhẹ'];
 export const MEAL = ['Sáng','Trưa','Xế chiều','Tối','Khuya'];
 export const OCCASION = ['Sinh nhật, kỷ niệm','Tiếp khách','Lễ Tết'];
 export const WEATHER = ['Hợp ngày mưa','Hợp ngày nóng','Có máy lạnh'];
+export const WHO = ['Một mình','Cặp đôi','Nhóm bạn','Gia đình'];
+// Vòng quay khi chưa có quán nào: các loại món phổ biến theo bữa
+export const FREE_WHEEL = { 'Sáng':['Bún & phở','Bánh mì','Xôi & cháo','Cơm','Mì & hủ tiếu','Bánh & cuốn','Cà phê','Trà & nước ép'], 'Trưa':['Cơm','Bún & phở','Mì & hủ tiếu','Bánh & cuốn','Món gà & vịt','Sushi & món Nhật','Món chay','Bánh mì'], 'Xế chiều':['Ăn vặt đường phố','Chiên & xiên','Chè & kem','Bánh ngọt','Trà sữa','Cà phê','Sinh tố & đá xay','Bánh & cuốn'], 'Tối':['Lẩu','Nướng','Hải sản','Cơm','Bún & phở','Sushi & món Nhật','Pizza & mì Ý','Ốc'], 'Khuya':['Mồi nhậu','Ốc','Xôi & cháo','Mì & hủ tiếu','Bún & phở','Chiên & xiên','Bánh mì','Ăn vặt đường phố'] };
 export const SWEET = [...GROUPS['Đồ uống'], 'Bánh ngọt', 'Chè & kem'];
 export const DEFAULT_FOOD = [[0,100],[100,200],[200,350],[350,500],[500,9999]];
 export const DEFAULT_DRINK = [[0,50],[50,100],[100,200],[200,9999]];
