@@ -36,7 +36,12 @@ export async function boot(){
   const cached = lsGet('hnag2-session-user', null);
   if (cached && !S.online){ S.user = cached.user; S.profile = cached.profile; S.groups = cached.groups || []; S.gid = lsGet('hnag2-gid', null) || (S.groups[0] && S.groups[0].id); loadCache(); S.loaded = true; emit(); }
   const { data } = await sb.auth.getSession();
-  await setUser(data.session ? data.session.user : null);
+  let u = data.session ? data.session.user : null;
+  if (!u && !localStorage.getItem('hnag2-wantlogin')){
+    try { const r = await sb.auth.signInAnonymously(); if (r.error) throw r.error; u = r.data.user; }
+    catch (e) { S.anonError = String(e.message || e); }
+  }
+  await setUser(u);
   sb.auth.onAuthStateChange((ev, session) => {
     const u = session ? session.user : null;
     if ((u && u.id) !== (S.user && S.user.id)) setUser(u);
@@ -48,7 +53,7 @@ async function setUser(u){
   if (!u){ S.profile = null; S.groups = []; S.gid = null; TABLES.forEach(t => S[t] = []); S.loaded = true; if (channel){ sb.removeChannel(channel); channel = null; } emit(); return; }
   try {
     let { data: prof } = await sb.from('profiles').select('*').eq('id', u.id).maybeSingle();
-    if (!prof){ const name = (u.user_metadata && u.user_metadata.name) || (u.email || '').split('@')[0]; const r = await sb.from('profiles').upsert({ id:u.id, name, prefs:{} }).select().single(); prof = r.data || { id:u.id, name, prefs:{} }; }
+    if (!prof){ const name = (u.user_metadata && u.user_metadata.name) || (u.email || '').split('@')[0] || ('Khách ' + u.id.slice(0, 4).toUpperCase()); const r = await sb.from('profiles').upsert({ id:u.id, name, prefs:{} }).select().single(); prof = r.data || { id:u.id, name, prefs:{} }; }
     S.profile = prof;
     await loadGroups();
     if (!S.groups.some(g => g.kind === 'personal')){ await sb.rpc('create_group', { p_name:'Kho cá nhân', p_kind:'personal', p_member_name:S.profile.name }); await loadGroups(); }
@@ -62,7 +67,7 @@ async function setUser(u){
   }
 }
 
-export async function signIn(email, password){ const { error } = await sb.auth.signInWithPassword({ email, password }); if (error) throw error; }
+export async function signIn(email, password){ const { error } = await sb.auth.signInWithPassword({ email, password }); if (error) throw error; localStorage.removeItem('hnag2-wantlogin'); }
 export async function signUp(email, password, name){
   const { data, error } = await sb.auth.signUp({ email, password, options:{ data:{ name }, emailRedirectTo: location.origin } });
   if (error) throw error; return data;
@@ -71,6 +76,11 @@ export async function magicLink(email){ const { error } = await sb.auth.signInWi
 export async function resetPassword(email){ const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/?reset=1' }); if (error) throw error; }
 export async function updatePassword(pw){ const { error } = await sb.auth.updateUser({ password: pw }); if (error) throw error; }
 export async function signOut(){ await sb.auth.signOut(); localStorage.removeItem('hnag2-session-user'); }
+export const isAnon = () => !!(S.user && S.user.is_anonymous);
+// Gắn email cho tài khoản khách: giữ nguyên dữ liệu, dùng được trên máy khác sau khi xác nhận email
+export async function linkEmail(email){ const { error } = await sb.auth.updateUser({ email }, { emailRedirectTo: location.origin }); if (error) throw error; }
+export async function wantLogin(){ localStorage.setItem('hnag2-wantlogin', '1'); await signOut(); }
+export async function backToGuest(){ localStorage.removeItem('hnag2-wantlogin'); const r = await sb.auth.signInAnonymously(); if (r.error) throw r.error; }
 
 export async function saveProfile(patch){
   S.profile = { ...S.profile, ...patch };

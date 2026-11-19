@@ -70,6 +70,7 @@ function authView(){
   if (a.mode === 'sent') return h + '<div class="card col"><b>Kiểm tra hộp thư ' + esc(a.email) + '</b><div class="mute">' + esc(a.msg) + '</div><button class="btn" data-act="authmode" data-v="login">Quay lại đăng nhập</button></div>';
   if (a.mode === 'newpw') return h + '<form class="card col" data-form="newpw"><b>Đặt mật khẩu mới</b><label class="f">Mật khẩu mới<input type="password" name="pw" minlength="6" required autocomplete="new-password"></label><button class="btn pri" type="submit">Lưu mật khẩu</button>' + (a.msg ? '<div class="mute" role="alert">' + esc(a.msg) + '</div>' : '') + '</form>';
   const up = a.mode === 'signup';
+  if (S.anonError && !lsG('hnag2-wantlogin', null)) h += '<div class="card mute">Chế độ khách đang tạm tắt, đăng nhập để dùng.</div>';
   h += '<form class="card col" data-form="auth"><div class="seg">' + [['login','Đăng nhập'],['signup','Tạo tài khoản']].map(x => '<button type="button" data-act="authmode" data-v="' + x[0] + '" class="' + (a.mode === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>' +
     (up ? '<label class="f">Tên hiển thị trong nhóm<input name="name" required autocomplete="nickname" placeholder="Ví dụ: Vũ"></label>' : '') +
     '<label class="f">Email<input type="email" name="email" required autocomplete="email" value="' + esc(a.email) + '"></label>' +
@@ -77,6 +78,7 @@ function authView(){
     '<button class="btn pri" type="submit"' + (a.busy ? ' disabled' : '') + '>' + (a.busy ? 'Đang xử lý…' : up ? 'Tạo tài khoản' : 'Đăng nhập') + '</button>' +
     (a.msg ? '<div class="mute" role="alert">' + esc(a.msg) + '</div>' : '') +
     (up ? '' : '<div class="row"><button type="button" class="btn sm grow ghost" data-act="magic">Gửi link đăng nhập qua email</button><button type="button" class="btn sm ghost" data-act="forgot">Quên mật khẩu</button></div>') + '</form>';
+  if (lsG('hnag2-wantlogin', null)) h += '<button class="btn ghost" data-act="guest">Dùng thử không cần đăng nhập</button>';
   return h;
 }
 
@@ -405,7 +407,8 @@ function nhomView(){
   h += '<button class="mrow bb linkish" data-act="sheet" data-v="bands-drink"><span class="grow b">Khung giá đồ uống, dessert</span><span class="mute">' + L.drinkBands().length + ' mức</span>' + ic('next', 16, 2.2) + '</button>';
   h += '<button class="mrow bb linkish" data-act="sheet" data-v="tags"><span class="grow b">Danh mục tag</span><span class="mute">7 nhóm</span>' + ic('next', 16, 2.2) + '</button>';
   h += '<button class="mrow linkish" data-act="sheet" data-v="combo"><span class="grow b">Bảng ghép combo ăn và uống</span><span class="mute">' + L.comboRules().length + ' cặp</span>' + ic('next', 16, 2.2) + '</button></div>';
-  h += '<h2 class="lbl">Tài khoản</h2><div class="card col"><div class="row between"><div class="col" style="gap:0"><span class="b">' + esc(S.profile ? S.profile.name : '') + '</span><span class="mute">' + esc(S.user ? S.user.email : '') + '</span></div><button class="btn sm" data-act="sheet" data-v="myname">Đổi tên</button></div><div class="row"><button class="btn sm grow" data-act="export">Tải bản sao lưu</button><button class="btn sm grow ghost" data-act="logout">Đăng xuất</button></div>' + (installHint() ? '<div class="mute">' + installHint() + '</div>' : '') + '</div>';
+  if (D.isAnon()) h += '<h2 class="lbl">Tài khoản</h2><div class="card col"><div class="row between"><div class="col" style="gap:0"><span class="b">' + esc(S.profile ? S.profile.name : '') + '</span><span class="mute">Đang dùng chế độ khách trên máy này</span></div><button class="btn sm" data-act="sheet" data-v="myname">Đổi tên</button></div><div class="mute">Dữ liệu được lưu trên máy chủ nhưng gắn với trình duyệt này. Gắn email để giữ dữ liệu lâu dài và mở được trên điện thoại lẫn máy tính.</div><form class="col" data-form="linkemail"><input type="email" name="email" required placeholder="Email của bạn" autocomplete="email"><button class="btn pri" type="submit">Gắn email, giữ dữ liệu</button></form>' + (U.linkMsg ? '<div class="mute" role="status">' + esc(U.linkMsg) + '</div>' : '') + '<div class="row"><button class="btn sm grow" data-act="export">Tải bản sao lưu</button><button class="btn sm grow ghost" data-act="wantlogin">' + (U.delArm === 'wantlogin' ? 'Bấm lần nữa: rời chế độ khách' : 'Đăng nhập tài khoản có sẵn') + '</button></div>' + (installHint() ? '<div class="mute">' + installHint() + '</div>' : '') + '</div>';
+  else h += '<h2 class="lbl">Tài khoản</h2><div class="card col"><div class="row between"><div class="col" style="gap:0"><span class="b">' + esc(S.profile ? S.profile.name : '') + '</span><span class="mute">' + esc(S.user ? S.user.email : '') + '</span></div><button class="btn sm" data-act="sheet" data-v="myname">Đổi tên</button></div><div class="row"><button class="btn sm grow" data-act="export">Tải bản sao lưu</button><button class="btn sm grow ghost" data-act="logout">Đăng xuất</button></div>' + (installHint() ? '<div class="mute">' + installHint() + '</div>' : '') + '</div>';
   h += '<button class="btn sm ghost" data-act="seg" data-v="ganday" data-go="quan">Các bữa đã đi nằm ở Quán › Gần đây</button>';
   return h;
 }
@@ -822,7 +825,7 @@ document.addEventListener('click', async ev => {
   const el = ev.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act, v = el.dataset.v, id = el.dataset.id;
   if (a === 'scrim'){ if (ev.target === el){ if (U.sheet === 'rate') saveRateDraft(); U.sheet = null; U.imp = null; if (U.scan && !U.scan.busy) U.scan = null; render(); } return; }
-  if (a !== 'del' && a !== 'leave') U.delArm = null;
+  if (a !== 'del' && a !== 'leave' && a !== 'wantlogin') U.delArm = null;
   switch (a){
     case 'tab': if (U.sess) closeSession(); U.tab = v; U.detail = null; if (v !== 'luu') U.draft = null; render(); scrollTo(0, 0); if (v === 'home') refreshEnv(); break;
     case 'seg': U.seg = v; U.detail = null; if (el.dataset.go){ U.tab = el.dataset.go; } render(); scrollTo(0, 0); break;
@@ -909,7 +912,9 @@ document.addEventListener('click', async ev => {
     case 'comborm': { const r = JSON.parse(JSON.stringify(L.comboRules())); r.splice(+v, 1); setPref({ combo:r }); break; }
     case 'comboreset': setPref({ combo:null }); break;
     case 'export': exportData(); break;
-    case 'logout': await D.signOut(); U.tab = 'home'; resetSpin(); render(); break;
+    case 'logout': await D.signOut(); localStorage.setItem('hnag2-wantlogin', '1'); U.tab = 'home'; resetSpin(); render(); break;
+    case 'wantlogin': if (U.delArm === 'wantlogin'){ U.delArm = null; await D.wantLogin(); U.tab = 'home'; resetSpin(); render(); } else { U.delArm = 'wantlogin'; snack('Quán đã lưu ở chế độ khách sẽ không theo sang tài khoản kia. Gắn email nếu muốn giữ.'); } break;
+    case 'guest': try { await D.backToGuest(); } catch (e) { U.auth.msg = 'Chế độ khách đang tạm tắt.'; render(); } break;
     case 'newsess': newSession(); break;
     case 'closesess': closeSession(); break;
     case 'sessx': { const s = U.sess; const mine = s.votes.find(x => x.user_id === L.me()) || { excluded:[], done:false }; const ex = [...(mine.excluded || [])]; const i = ex.indexOf(v); if (i < 0) ex.push(v); else ex.splice(i, 1); const vv = s.votes.find(x => x.user_id === L.me()); if (vv) vv.excluded = ex; else s.votes.push({ user_id:L.me(), excluded:ex, done:false }); render(); D.vote(s.id, s.session.group_id, ex, mine.done).catch(() => snack('Chưa gửi được phiếu.')); break; }
@@ -936,6 +941,7 @@ document.addEventListener('submit', async ev => {
     U.auth.busy = false; render(); return;
   }
   if (k === 'newpw'){ try { await D.updatePassword(String(fd.get('pw'))); U.auth.mode = 'login'; history.replaceState(null, '', '/'); snack('Đã đổi mật khẩu.'); } catch (e) { U.auth.msg = authErr(e); } render(); return; }
+  if (k === 'linkemail'){ const em = String(fd.get('email') || '').trim(); try { await D.linkEmail(em); U.linkMsg = 'Đã gửi email xác nhận tới ' + em + '. Bấm link trong email là xong; lần sau dùng "Gửi link đăng nhập qua email" để mở trên máy khác.'; } catch (e) { U.linkMsg = /already|registered|exists/i.test(e.message || '') ? 'Email này đã có tài khoản khác.' : authErr(e); } render(); return; }
   if (k === 'quick'){ const v = U.quick.trim(); if (!v) return; U.quick = ''; render(); quickSave(v); return; }
   if (k === 'adddish'){ const n = String(fd.get('n') || '').trim(); if (!n) return; const p = P(U.detail); D.upsert('dishes', { id:D.uuid(), place_id:p.id, group_id:p.group_id, name:n.slice(0, 80), price:String(fd.get('p') || '').trim() || null, category:null, gone:false }); return; }
   if (k === 'ratedish'){ const n = String(fd.get('n') || '').trim(); if (!n) return; U.rate.dishes.push({ id:null, name:n.slice(0, 80), stars:0, photo:null }); saveRateDraft(); render(); const ni = $('#nd'); if (ni) ni.focus(); return; }
