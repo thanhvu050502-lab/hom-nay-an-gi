@@ -13,29 +13,32 @@ async function checkUser(req){
   try { const r = await tfetch(url + '/auth/v1/user', { headers:{ Authorization:auth, apikey:key } }, 8000); console.log('auth', r.status); return r.ok; } catch (e) { console.log('auth err', e.message); return false; }
 }
 
+const MODELS = (process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : []).concat(['gemini-flash-lite-latest', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest']);
 async function gemini(parts, opts = {}){
   const key = process.env.GEMINI_API_KEY;
   if (!key){ const e = new Error('no_key'); e.code = 'no_key'; throw e; }
-  const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
   const body = { contents:[{ role:'user', parts }], generationConfig:{ temperature:0.2 } };
   if (opts.search) body.tools = [{ google_search:{} }];
   else body.generationConfig.responseMimeType = 'application/json';
-  const t0 = Date.now();
-  let r;
-  try { r = await tfetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-goog-api-key':key }, body:JSON.stringify(body) }, 45000); }
-  catch (e) { console.log('gemini fetch err', e.message, Date.now() - t0); const er = new Error('timeout'); er.code = 'ai'; throw er; }
-  console.log('gemini', model, r.status, Date.now() - t0, 'ms');
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok){
-    const msg = (j.error && j.error.message) || ('HTTP ' + r.status);
-    const e = new Error(msg);
-    e.code = r.status === 429 ? 'quota' : (opts.search && (r.status === 400 || r.status === 403)) ? 'no_search' : 'ai';
-    throw e;
+  let last = null;
+  for (const model of [...new Set(MODELS)]){
+    const t0 = Date.now(); let r;
+    try { r = await tfetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-goog-api-key':key }, body:JSON.stringify(body) }, opts.ms || 18000); }
+    catch (e) { console.log('gemini', model, 'timeout', Date.now() - t0); last = Object.assign(new Error('timeout ' + model), { code:'ai' }); continue; }
+    const j = await r.json().catch(() => ({}));
+    console.log('gemini', model, r.status, Date.now() - t0, 'ms');
+    if (!r.ok){
+      const msg = (j.error && j.error.message) || ('HTTP ' + r.status);
+      last = Object.assign(new Error(msg), { code: r.status === 429 ? 'quota' : (opts.search && (r.status === 400 || r.status === 403)) ? 'no_search' : 'ai' });
+      if (r.status === 400 && opts.search) throw last;
+      continue;
+    }
+    const c = (j.candidates || [])[0] || {};
+    const text = ((c.content || {}).parts || []).filter(p => !p.thought).map(p => p.text || '').join('');
+    const chunks = ((c.groundingMetadata || {}).groundingChunks || []).map(g => g.web).filter(Boolean);
+    return { text, chunks, model };
   }
-  const c = (j.candidates || [])[0] || {};
-  const text = ((c.content || {}).parts || []).map(p => p.text || '').join('');
-  const chunks = ((c.groundingMetadata || {}).groundingChunks || []).map(g => g.web).filter(Boolean);
-  return { text, chunks };
+  throw last || Object.assign(new Error('ai'), { code:'ai' });
 }
 function parseJSON(t){
   if (!t) return null;
