@@ -2,6 +2,7 @@
 // Khóa GEMINI_API_KEY nằm trong biến môi trường của Vercel, không bao giờ gửi xuống trình duyệt.
 const CFG = require('./_config.js');
 
+function tfetch(url, opts = {}, ms = 10000){ const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), ms); return fetch(url, { ...opts, signal:ctl.signal }).finally(() => clearTimeout(t)); }
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
 
 async function checkUser(req){
@@ -9,7 +10,7 @@ async function checkUser(req){
   if (!url || !key) return true;
   const auth = req.headers.authorization || '';
   if (!/^Bearer .{20,}/.test(auth)) return false;
-  try { const r = await fetch(url + '/auth/v1/user', { headers:{ Authorization:auth, apikey:key } }); return r.ok; } catch (e) { return false; }
+  try { const r = await tfetch(url + '/auth/v1/user', { headers:{ Authorization:auth, apikey:key } }, 8000); console.log('auth', r.status); return r.ok; } catch (e) { console.log('auth err', e.message); return false; }
 }
 
 async function gemini(parts, opts = {}){
@@ -19,7 +20,11 @@ async function gemini(parts, opts = {}){
   const body = { contents:[{ role:'user', parts }], generationConfig:{ temperature:0.2 } };
   if (opts.search) body.tools = [{ google_search:{} }];
   else body.generationConfig.responseMimeType = 'application/json';
-  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-goog-api-key':key }, body:JSON.stringify(body) });
+  const t0 = Date.now();
+  let r;
+  try { r = await tfetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-goog-api-key':key }, body:JSON.stringify(body) }, 45000); }
+  catch (e) { console.log('gemini fetch err', e.message, Date.now() - t0); const er = new Error('timeout'); er.code = 'ai'; throw er; }
+  console.log('gemini', model, r.status, Date.now() - t0, 'ms');
   const j = await r.json().catch(() => ({}));
   if (!r.ok){
     const msg = (j.error && j.error.message) || ('HTTP ' + r.status);
@@ -67,7 +72,7 @@ const TASKS = {
   async link(b, ctx){
     let caption = '', author = '';
     try {
-      if (/tiktok\.com/i.test(b.url)){ const r = await fetch('https://www.tiktok.com/oembed?url=' + encodeURIComponent(b.url), { headers:{ 'User-Agent':UA } }); const j = await r.json(); caption = j.title || ''; author = j.author_name || ''; }
+      if (/tiktok\.com/i.test(b.url)){ const r = await tfetch('https://www.tiktok.com/oembed?url=' + encodeURIComponent(b.url), { headers:{ 'User-Agent':UA } }); const j = await r.json(); caption = j.title || ''; author = j.author_name || ''; }
       if (!caption){ const r = await fetchText(b.url); caption = [meta(r.text, 'og:title'), meta(r.text, 'og:description'), meta(r.text, 'description'), (r.text.match(/<title>([^<]*)<\/title>/i) || [])[1] || ''].filter(Boolean).join('\n'); }
     } catch (e) {}
     if (!caption.trim()) return { name:'' };
@@ -114,6 +119,7 @@ const TASKS = {
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
+  console.log('start', req.method, typeof req.body, process.env.GEMINI_API_KEY ? 'key ok' : 'no key');
   if (req.method !== 'POST') return res.status(405).json({ error:'method' });
   if (!(await checkUser(req))) return res.status(401).json({ error:'auth' });
   const b = req.body || {};
