@@ -58,6 +58,15 @@ async function fetchText(url, ms = 8000){
 }
 
 const TASKS = {
+  async ping(){
+    const key = process.env.GEMINI_API_KEY; const t0 = Date.now();
+    try {
+      const r = await tfetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers:{ 'x-goog-api-key':key } }, 10000);
+      const j = await r.json();
+      const names = (j.models || []).map(m => m.name.replace('models/', '')).filter(n => /flash/.test(n));
+      return { status:r.status, ms:Date.now() - t0, models:names, err:j.error && j.error.message };
+    } catch (e) { return { err:e.message, ms:Date.now() - t0 }; }
+  },
   // Mở link rút gọn Google Maps để lấy link đầy đủ (có tên quán và tọa độ)
   async resolve(b){
     const r = await fetchText(b.url);
