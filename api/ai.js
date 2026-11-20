@@ -72,44 +72,20 @@ async function osmGeocode(name, area){
   const r = await tfetch(url, { headers:{ 'User-Agent':'HomNayAnGi/1.0 (github.com/thanhvu050502-lab/hom-nay-an-gi)', 'Accept-Language':'vi' } }, 8000);
   const arr = await r.json().catch(() => []);
   let best = null;
-  for (const x of arr){ const sc = nameScore(q, x.name || x.display_name.split(',')[0]); if (sc >= 0.6 && (!best || sc > best.sc)) best = { sc, lat:+x.lat, lng:+x.lon, address:x.display_name.split(',').slice(1, 4).join(',').trim(), osm:x.name }; }
+  for (const x of arr){ const nm = x.name || x.display_name.split(',')[0]; if (!nm || nm.length > 70) continue; const sc = Math.min(nameScore(q, nm), nameScore(nm, q) + 0.25); if (sc >= 0.75 && (!best || sc > best.sc)) best = { sc, lat:+x.lat, lng:+x.lon, address:x.display_name.split(',').slice(1, 4).join(',').trim(), osm:x.name }; }
   return best;
 }
-function coordsFrom(text, url){
-  const pats = [/center=(-?\d{1,2}\.\d+)%2C(-?\d{1,3}\.\d+)/, /@(-?\d{1,2}\.\d{3,}),(-?\d{1,3}\.\d{3,})/, /!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/, /\[null,null,(-?\d{1,2}\.\d{4,}),(-?\d{1,3}\.\d{4,})\]/];
-  for (const re of pats){ const m = (url || '').match(re) || (text || '').match(re); if (m){ const lat = +m[1], lng = +m[2]; if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0)) return { lat, lng }; } }
-  return null;
-}
 const TASKS = {
-  async geodebug(b){
-    const r = await fetchText(b.url + (b.url.includes('?') ? '&' : '?') + 'hl=vi&gl=vn', 8000);
-    const pairs = []; const re = /(-?\d{1,3}\.\d{5,})\s*,\s*(-?\d{1,3}\.\d{5,})/g; let m;
-    while ((m = re.exec(r.text)) && pairs.length < 40) pairs.push([m[1], m[2], r.text.slice(Math.max(0, m.index - 40), m.index).replace(/[^\x20-\x7e]/g, '?')]);
-    return { finalUrl:r.url, len:r.text.length, title:(r.text.match(/<title>([^<]*)/) || [])[1], og:meta(r.text, 'og:title'), ogimg:meta(r.text, 'og:image').slice(0, 200), pairs };
-  },
-  // Lấy tọa độ và địa chỉ cho link Google Maps (tối đa 10 link một lần)
-  async geo(b){
-    const urls = (b.urls || []).filter(u => /^https?:\/\/[^/]*(google\.[^/]+\/maps|goo\.gl|maps\.app)/i.test(u)).slice(0, 10);
-    const one = async u => {
-      try {
-        const r = await fetchText(u, 7000);
-        const c = coordsFrom(r.text, r.url);
-        let t = meta(r.text, 'og:title'); const parts = t.split(' · ');
-        return c ? { url:u, lat:c.lat, lng:c.lng, address:parts.length > 1 ? parts.slice(1).join(' · ').trim() : '' } : { url:u, fail:true, status:r.ok };
-      } catch (e) { return { url:u, fail:true, err:e.message }; }
-    };
-    const out = [];
-    for (let i = 0; i < urls.length; i += 5) out.push(...await Promise.all(urls.slice(i, i + 5).map(one)));
+  // Tra vị trí theo tên quán trên OpenStreetMap (tối đa 8 quán, 1 lượt/giây theo quy định của Nominatim)
+  async geoname(b){
+    const items = (b.items || []).slice(0, 8); const out = [];
+    for (let i = 0; i < items.length; i++){
+      const it = items[i];
+      try { const g = await osmGeocode(String(it.name || '').slice(0, 80), String(it.area || '').slice(0, 40)); out.push(g ? { id:it.id, lat:g.lat, lng:g.lng, address:g.address } : { id:it.id, none:true }); }
+      catch (e) { out.push({ id:it.id, err:true }); }
+      if (i < items.length - 1) await new Promise(r => setTimeout(r, 1100));
+    }
     return { items:out };
-  },
-  async ping(){
-    const key = process.env.GEMINI_API_KEY; const t0 = Date.now();
-    try {
-      const r = await tfetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers:{ 'x-goog-api-key':key } }, 10000);
-      const j = await r.json();
-      const names = (j.models || []).map(m => m.name.replace('models/', '')).filter(n => /flash/.test(n));
-      return { status:r.status, ms:Date.now() - t0, models:names, err:j.error && j.error.message };
-    } catch (e) { return { err:e.message, ms:Date.now() - t0 }; }
   },
   // Mở link rút gọn Google Maps để lấy link đầy đủ (có tên quán và tọa độ)
   async resolve(b){
@@ -173,7 +149,6 @@ const TASKS = {
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   console.log('start', req.method, typeof req.body, process.env.GEMINI_API_KEY ? 'key ok' : 'no key');
-  if (req.method === 'GET' && req.query && req.query.dbg === 'geo2'){ const names = ['Marcel Thao Dien','Mámi Cocktails - Tapas & Bar','Somme Wine Bar','BARRIGÓN','777 Cocktails Bar','Phở Hòa Pasteur','Bánh mì Huỳnh Hoa','Lẩu dê Lâm Ký']; const out = []; for (const n of names){ out.push([n, await osmGeocode(n).catch(e => e.message)]); await new Promise(r => setTimeout(r, 1100)); } return res.status(200).json(out); }
   if (req.method !== 'POST') return res.status(405).json({ error:'method' });
   if (!(await checkUser(req))) return res.status(401).json({ error:'auth' });
   const b = req.body || {};

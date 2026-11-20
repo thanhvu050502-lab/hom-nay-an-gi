@@ -155,3 +155,6 @@ body.noauth nav{display:none}
 }
 .combo-spin{display:flex;align-items:center;justify-content:center;min-height:84px;text-align:center}
 .combo-spin .num{font-size:24px;line-height:1.2}
+.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.85) saturate(.5)}
+.map.pinning{outline:2px dashed var(--lime);outline-offset:2px;cursor:crosshair}
+.map.pinning .leaflet-container,.map.pinning.leaflet-container{cursor:crosshair}

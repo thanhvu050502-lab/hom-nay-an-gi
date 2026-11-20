@@ -240,6 +240,7 @@ function searchView(){
   if (kw) list = list.filter(p => [p.name, p.address, L.tagsOf(p).area, L.tagsOf(p).cuisine, L.formOf(p), L.tagsOf(p).type, dishTxt(p)].join(' ').toLowerCase().includes(kw));
   list = sortList(list);
   h += '<div id="map" class="map" role="img" aria-label="Bản đồ các quán"></div>';
+  { const noPos = S.places.filter(p => p.status === 'active' && p.lat == null).length; if (U.geoLeft) h += '<div class="mute">Đang tự tìm vị trí trên OpenStreetMap, còn ' + U.geoLeft + ' quán…</div>'; else if (noPos) h += '<div class="mute">' + noPos + ' quán chưa có vị trí trên bản đồ. Mở quán và chạm bản đồ để ghim.</div>'; }
   h += '<div class="wrap"><button class="chip" data-act="sheet" data-v="sort">' + ic('sort', 16, 2.2) + 'Sắp xếp: ' + (SORTS.find(s => s[0] === U.sort) || SORTS[0])[1] + '</button>' + af.map(a => '<button type="button" class="chip on" data-act="unf" data-k="' + a[0] + '" data-v="' + esc(a[1] == null ? '' : a[1]) + '">' + esc(a[2]) + ic('x', 12, 3) + '</button>').join('') + '<button class="chip" data-act="sheet" data-v="filter">' + ic('filter', 16, 2.2) + 'Lọc</button></div>';
   if (!list.length) h += '<div class="card mute">' + (kw ? 'Không quán nào khớp "' + esc(U.q) + '".' : S.places.length ? 'Không quán nào khớp bộ lọc.' : 'Chưa có quán nào. Bấm Lưu ở dưới để thêm.') + '</div>';
   else h += '<div class="col">' + list.slice(0, 200).map((p, i) => qcard(p, i, L.again(p) === 'no' ? 'Không quay lại · đã loại khỏi vòng quay' : null)).join('') + '</div>';
@@ -338,7 +339,8 @@ function detailView(){
   const hist = S.meals.filter(m => m.place_id === p.id).sort((a, b) => new Date(b.at) - new Date(a.at));
   if (hist.length) h += '<h2 class="lbl">Lịch sử đi · ' + hist.length + '</h2><div class="card" style="padding:4px 14px">' + hist.slice(0, 10).map((m, i) => '<div class="mrow' + (i < Math.min(hist.length, 10) - 1 ? ' bb' : '') + '"><div class="col grow" style="gap:2px"><div class="sm b">' + esc(when(m.at)) + (m.created_by !== L.me() ? ' · ' + esc(memberName(m.created_by)) : '') + '</div><div class="mute">' + esc([m.total ? money(m.total) : '', m.with_text ? 'với ' + m.with_text : '', m.note || ''].filter(Boolean).join(' · ') || (m.rated ? 'Đã chấm' : 'Chưa chấm')) + '</div></div>' + (m.score ? '<div class="num m">' + fmt(m.score) + '</div>' : (!m.rated && m.created_by === L.me() ? '<button class="btn sm" data-act="rate" data-id="' + esc(m.id) + '">Chấm</button>' : '')) + '</div>').join('') + '</div>';
   if (p.note) h += '<div class="card mute">Ghi chú: ' + esc(p.note) + '</div>';
-  if (p.lat != null) h += '<div id="map" class="map small" role="img" aria-label="Vị trí quán trên bản đồ"></div>';
+  if (p.lat != null) h += '<div class="row between"><h2 class="lbl">Vị trí' + ((L.tagsOf(p).geo === 'osm') ? ' · tự tìm, có thể lệch' : '') + '</h2><button class="btn sm ghost" data-act="repin">' + (U.repin ? 'Chạm bản đồ để ghim lại' : 'Ghim lại') + '</button></div><div id="map" class="map small' + (U.repin ? ' pinning' : '') + '" role="img" aria-label="Vị trí quán trên bản đồ"></div>';
+  else h += '<div class="col g6"><h2 class="lbl">Chưa có vị trí</h2><div class="mute">Kéo bản đồ tới chỗ quán rồi chạm một lần để ghim. Hoặc <a target="_blank" rel="noopener" href="' + esc(mapsHref(p)) + '">mở trên Google Maps</a> để xem quán ở đâu.</div><div id="map" class="map pinning" role="application" aria-label="Chạm để ghim vị trí quán"></div></div>';
   h += '<div class="row"><button class="btn sm grow" data-act="edit" data-id="' + esc(p.id) + '">Sửa thông tin và tag</button><button class="btn sm" data-act="wish" data-id="' + esc(p.id) + '">' + (p.wish ? 'Bỏ Muốn thử' : 'Muốn thử') + '</button></div>';
   h += '<button class="btn sm ghost" data-act="del" data-id="' + esc(p.id) + '">' + (U.delArm === p.id ? 'Bấm lần nữa để xóa hẳn quán này' : 'Xóa quán') + '</button>';
   h += '<div class="stickybar"><button class="btn pri grow tall" data-act="commitq" data-id="' + esc(p.id) + '"' + (p.status !== 'active' ? ' disabled' : '') + '>Chốt quán này</button><a class="btn tall" target="_blank" rel="noopener" href="' + esc(mapsHref(p)) + '">' + ic('pin', 18) + 'Chỉ đường</a></div>';
@@ -593,10 +595,13 @@ function drawMap(){
   const el = document.getElementById('map');
   if (map){ try { map.remove(); } catch (e) {} map = null; }
   if (!el || !window.L) return;
+  const pinMode = U.detail && P(U.detail) && P(U.detail).lat == null;
   const pts = (U.detail ? [P(U.detail)] : S.places.filter(p => p.status === 'active')).filter(p => p && p.lat != null);
   const center = U.detail && pts[0] ? [pts[0].lat, pts[0].lng] : L.G.pos ? [L.G.pos.lat, L.G.pos.lng] : pts[0] ? [pts[0].lat, pts[0].lng] : [10.7769, 106.7009];
-  map = window.L.map(el, { zoomControl:false, attributionControl:true }).setView(center, U.detail ? 16 : 14);
-  window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom:19, attribution:'© OpenStreetMap © CARTO' }).addTo(map);
+  map = window.L.map(el, { zoomControl:false, attributionControl:true }).setView(center, pinMode ? 13 : U.detail ? 16 : 14);
+  if (U.detail && !pinMode && P(U.detail).geo === 'osm'){}
+  if (U.detail){ map.on('click', e => { const p = P(U.detail); if (!p) return; if (p.lat != null && !U.repin) return; const prev = { lat:p.lat, lng:p.lng }; U.repin = false; D.upsert('places', { ...p, lat:+e.latlng.lat.toFixed(6), lng:+e.latlng.lng.toFixed(6), tags:{ ...(p.tags || {}), geo:'pin' } }); snack('Đã ghim vị trí ' + p.name + '.', () => { const q = P(p.id); D.upsert('places', { ...q, lat:prev.lat, lng:prev.lng }); }); }); }
+  window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(map);
   const icon = window.L.divIcon({ className:'mpin', html:'<span>' + ic('bowl', 16, 2) + '</span>', iconSize:[34, 34], iconAnchor:[17, 17] });
   pts.slice(0, 300).forEach(p => window.L.marker([p.lat, p.lng], { icon, title:p.name }).addTo(map).on('click', () => { if (!U.detail) openPlace(p.id); }).bindTooltip(p.name, { direction:'top', offset:[0, -14] }));
   if (L.G.pos) window.L.circleMarker([L.G.pos.lat, L.G.pos.lng], { radius:7, color:'#6FA8FF', weight:4, fillColor:'#F6F0E8', fillOpacity:1 }).addTo(map);
@@ -604,7 +609,7 @@ function drawMap(){
 }
 
 // ---------- HÀNH ĐỘNG ----------
-function openPlace(id){ U.back = { tab:U.tab, seg:U.seg }; U.sheet = null; U.tab = 'quan'; U.detail = id; U.delArm = null; render(); scrollTo(0, 0); }
+function openPlace(id){ U.repin = false; U.back = { tab:U.tab, seg:U.seg }; U.sheet = null; U.tab = 'quan'; U.detail = id; U.delArm = null; render(); scrollTo(0, 0); }
 function resetSpin(){ U.combo = null; U.comboSpin = null; U.phase = 'idle'; U.result = null; U.cat = null; U.commit = null; U.backups = []; U.skip = []; U.others = 0; U.regular = false; }
 function showResult(p, cat){ U.result = p; U.cat = cat; U.phase = p ? 'done' : 'idle'; const pool = cat ? L.candidates(U.f).filter(x => L.formOf(x) === cat) : L.candidates(U.f); U.backups = p ? L.pickN(pool, U.f, 2, [...U.skip, p.id]) : []; }
 function spin(){
@@ -903,6 +908,7 @@ document.addEventListener('click', async ev => {
     case 'setcover': { const p = P(U.detail); const ph = [...p.photos]; const [x] = ph.splice(+el.dataset.i, 1); ph.unshift(x); D.upsert('places', { ...p, photos:ph }); U.sheet = null; break; }
     case 'rmphoto': { const p = P(U.detail); const ph = [...p.photos]; ph.splice(+el.dataset.i, 1); D.upsert('places', { ...p, photos:ph }); U.sheet = null; break; }
     case 'unban': { const p = P(id); const r = L.myRating(p); if (r) D.upsert('place_ratings', { ...r, again:null }); snack('Quán đã quay lại vòng quay.'); break; }
+    case 'repin': U.repin = !U.repin; render(); break;
     case 'wish': { const p = P(id); D.upsert('places', { ...p, wish:!p.wish }); break; }
     case 'del': if (U.delArm === id){ const p = P(id); D.remove('places', { id }); U.delArm = null; U.detail = null; snack('Đã xóa "' + (p ? p.name : 'quán') + '".'); } else { U.delArm = id; render(); } break;
     case 'delnow': { const p = P(id); D.remove('places', { id }); snack('Đã xóa "' + (p ? p.name : 'quán') + '".', () => D.upsert('places', p)); break; }
@@ -1012,8 +1018,24 @@ document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && U.sheet)
 document.addEventListener('focusout', () => setTimeout(() => { if (U.pending) soft(); }, 0));
 
 async function refreshEnv(){
+  setTimeout(geoFill, 4000);
   if (U.f.radius || U.sort === 'near') await L.locate();
   if (S.online){ const w = await L.weatherNow(); if (JSON.stringify(w) !== JSON.stringify(U.weather)){ U.weather = w; soft(); } }
+}
+
+// Tự tìm vị trí cho quán chưa có tọa độ (OpenStreetMap, chạy ngầm, mỗi quán thử một lần)
+let geoRunning = false;
+async function geoFill(){
+  if (geoRunning || !S.online || !S.user) return; geoRunning = true;
+  try {
+    for (let round = 0; round < 60; round++){
+      const todo = S.places.filter(p => p.lat == null && !(p.tags || {}).geo && p.name && p.name !== 'Đang đọc link…').slice(0, 8);
+      if (!todo.length || !S.online) break;
+      U.geoLeft = S.places.filter(p => p.lat == null && !(p.tags || {}).geo).length; soft();
+      let r; try { r = await D.ai('geoname', { items:todo.map(p => ({ id:p.id, name:p.name, area:(p.tags || {}).area || '' })) }); } catch (e) { break; }
+      (r.items || []).forEach(x => { const p = P(x.id); if (!p || x.err) return; if (x.lat != null) D.upsert('places', { ...p, lat:x.lat, lng:x.lng, address:p.address || x.address || null, tags:{ ...(p.tags || {}), geo:'osm' } }); else D.upsert('places', { ...p, tags:{ ...(p.tags || {}), geo:'none' } }); });
+    }
+  } finally { geoRunning = false; U.geoLeft = 0; soft(); }
 }
 
 // ---------- KHỞI ĐỘNG ----------
