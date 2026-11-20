@@ -60,6 +60,21 @@ async function fetchText(url, ms = 8000){
   finally { clearTimeout(t); }
 }
 
+function norm(s){ return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+function nameScore(a, b){
+  const A = norm(a).split(' ').filter(w => w.length > 1), B = new Set(norm(b).split(' ').filter(w => w.length > 1));
+  if (!A.length || !B.size) return 0; const hit = A.filter(w => B.has(w)).length; return hit / Math.min(A.length, B.size);
+}
+// Tra tên quán trên OpenStreetMap (Nominatim), chỉ nhận kết quả trong vùng TP.HCM và tên khớp
+async function osmGeocode(name, area){
+  const q = name.replace(/\s*[-–|·].*$/, '').trim() || name;
+  const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=vn&viewbox=106.35,11.2,107.05,10.35&bounded=1&accept-language=vi&q=' + encodeURIComponent(q + (area ? ', ' + area : ''));
+  const r = await tfetch(url, { headers:{ 'User-Agent':'HomNayAnGi/1.0 (github.com/thanhvu050502-lab/hom-nay-an-gi)', 'Accept-Language':'vi' } }, 8000);
+  const arr = await r.json().catch(() => []);
+  let best = null;
+  for (const x of arr){ const sc = nameScore(q, x.name || x.display_name.split(',')[0]); if (sc >= 0.6 && (!best || sc > best.sc)) best = { sc, lat:+x.lat, lng:+x.lon, address:x.display_name.split(',').slice(1, 4).join(',').trim(), osm:x.name }; }
+  return best;
+}
 function coordsFrom(text, url){
   const pats = [/center=(-?\d{1,2}\.\d+)%2C(-?\d{1,3}\.\d+)/, /@(-?\d{1,2}\.\d{3,}),(-?\d{1,3}\.\d{3,})/, /!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/, /\[null,null,(-?\d{1,2}\.\d{4,}),(-?\d{1,3}\.\d{4,})\]/];
   for (const re of pats){ const m = (url || '').match(re) || (text || '').match(re); if (m){ const lat = +m[1], lng = +m[2]; if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0)) return { lat, lng }; } }
@@ -158,7 +173,7 @@ const TASKS = {
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   console.log('start', req.method, typeof req.body, process.env.GEMINI_API_KEY ? 'key ok' : 'no key');
-  if (req.method === 'GET' && req.query && req.query.dbg === 'geo1') return res.status(200).json(await TASKS.geodebug({ url:'https://maps.google.com/?cid=10604727540545158146' }));
+  if (req.method === 'GET' && req.query && req.query.dbg === 'geo2'){ const names = ['Marcel Thao Dien','Mámi Cocktails - Tapas & Bar','Somme Wine Bar','BARRIGÓN','777 Cocktails Bar','Phở Hòa Pasteur','Bánh mì Huỳnh Hoa','Lẩu dê Lâm Ký']; const out = []; for (const n of names){ out.push([n, await osmGeocode(n).catch(e => e.message)]); await new Promise(r => setTimeout(r, 1100)); } return res.status(200).json(out); }
   if (req.method !== 'POST') return res.status(405).json({ error:'method' });
   if (!(await checkUser(req))) return res.status(401).json({ error:'auth' });
   const b = req.body || {};
