@@ -158,6 +158,7 @@ const TASKS = {
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   console.log('start', req.method, typeof req.body, process.env.GEMINI_API_KEY ? 'key ok' : 'no key');
+  if (req.method === 'GET' && req.query && req.query.dbg === 'geo1') return res.status(200).json(await TASKS.geodebug({ url:'https://www.google.com/maps/place/Marcel+Thao+Dien/data=!4m2!3m1!1s0x31752f11c51288c1:0x932b8f8309fefc02' }));
   if (req.method !== 'POST') return res.status(405).json({ error:'method' });
   if (!(await checkUser(req))) return res.status(401).json({ error:'auth' });
   const b = req.body || {};
