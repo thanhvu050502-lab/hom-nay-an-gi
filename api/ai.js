@@ -75,7 +75,54 @@ async function osmGeocode(name, area){
   for (const x of arr){ const nm = x.name || x.display_name.split(',')[0]; if (!nm || nm.length > 70) continue; const sc = Math.min(nameScore(q, nm), nameScore(nm, q) + 0.25); if (sc >= 0.75 && (!best || sc > best.sc)) best = { sc, lat:+x.lat, lng:+x.lon, address:x.display_name.split(',').slice(1, 4).join(',').trim(), osm:x.name }; }
   return best;
 }
+// ---------- Google Places (gói miễn phí, có đếm lượt) ----------
+const SB = () => ({ url:process.env.SUPABASE_URL || CFG.SUPABASE_URL, key:process.env.SUPABASE_ANON_KEY || CFG.SUPABASE_KEY });
+async function sbRpc(auth, fn, args){ const { url, key } = SB(); const r = await tfetch(url + '/rest/v1/rpc/' + fn, { method:'POST', headers:{ apikey:key, Authorization:auth, 'Content-Type':'application/json' }, body:JSON.stringify(args || {}) }, 6000); return r.ok ? r.json() : null; }
+async function cacheGet(auth, k){ const { url, key } = SB(); try { const r = await tfetch(url + '/rest/v1/search_cache?select=data&key=eq.' + encodeURIComponent(k), { headers:{ apikey:key, Authorization:auth } }, 5000); const j = await r.json(); return j && j[0] ? j[0].data : null; } catch (e) { return null; } }
+async function cachePut(auth, k, data){ const { url, key } = SB(); try { await tfetch(url + '/rest/v1/search_cache', { method:'POST', headers:{ apikey:key, Authorization:auth, 'Content-Type':'application/json', Prefer:'resolution=merge-duplicates' }, body:JSON.stringify({ key:k, data, at:new Date().toISOString() }) }, 5000); } catch (e) {} }
+const HCM = { latitude:10.7769, longitude:106.7009 };
+const FIELDS = 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.googleMapsUri,places.currentOpeningHours.openNow,places.priceLevel,places.primaryTypeDisplayName';
+async function placesSearch(textQuery, center, radius, max){
+  const key = process.env.GOOGLE_PLACES_KEY;
+  const r = await tfetch('https://places.googleapis.com/v1/places:searchText', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-Goog-Api-Key':key, 'X-Goog-FieldMask':FIELDS }, body:JSON.stringify({ textQuery, languageCode:'vi', regionCode:'VN', maxResultCount:max || 10, locationBias:{ circle:{ center:center || HCM, radius:radius || 5000 } } }) }, 10000);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok){ console.log('places', r.status, j.error && j.error.message); const e = new Error((j.error && j.error.message) || 'places'); e.code = r.status === 429 ? 'limit' : 'places'; throw e; }
+  return (j.places || []).map(x => ({ id:x.id, name:(x.displayName || {}).text || '', address:x.formattedAddress || '', lat:x.location && x.location.latitude, lng:x.location && x.location.longitude, rating:x.rating ?? null, count:x.userRatingCount ?? 0, url:x.googleMapsUri || '', open:x.currentOpeningHours ? x.currentOpeningHours.openNow : null, price:x.priceLevel || null, kind:(x.primaryTypeDisplayName || {}).text || '' }));
+}
+
 const TASKS = {
+  // Tìm quán cho một món (Google), mỗi khóa tìm ghi nhớ trong ngày
+  async gsearch(b, ctx, req){
+    if (!process.env.GOOGLE_PLACES_KEY) return { nokey:true, items:[] };
+    const q = String(b.q || '').slice(0, 80).trim(); if (!q) return { items:[] };
+    const hasPos = typeof b.lat === 'number' && typeof b.lng === 'number';
+    const day = new Date().toISOString().slice(0, 10);
+    const k = 'g|' + norm(q) + '|' + (hasPos ? b.lat.toFixed(2) + ',' + b.lng.toFixed(2) : 'hcm') + '|' + day;
+    const auth = req.headers.authorization;
+    const hit = await cacheGet(auth, k); if (hit) return { items:hit, cached:true };
+    const ok = await sbRpc(auth, 'use_google', { p_kind:'search' }); if (ok !== true) return { limit:true, items:[] };
+    let items;
+    try { items = await placesSearch(q + (hasPos ? '' : ' Thành phố Hồ Chí Minh'), hasPos ? { latitude:b.lat, longitude:b.lng } : HCM, hasPos ? 4000 : 12000, 12); }
+    catch (e) { if (e.code === 'limit') return { limit:true, items:[] }; throw e; }
+    await cachePut(auth, k, items);
+    return { items };
+  },
+  // Lấy vị trí và điểm Google cho quán đã lưu (tối đa 5 quán mỗi lần)
+  async genrich(b, ctx, req){
+    if (!process.env.GOOGLE_PLACES_KEY) return { nokey:true, items:[] };
+    const auth = req.headers.authorization; const out = [];
+    for (const it of (b.items || []).slice(0, 5)){
+      const ok = await sbRpc(auth, 'use_google', { p_kind:'enrich' }); if (ok !== true) return { limit:true, items:out };
+      try {
+        const center = typeof it.lat === 'number' ? { latitude:it.lat, longitude:it.lng } : HCM;
+        const r = await placesSearch(String(it.name || '').slice(0, 80) + (it.area ? ' ' + it.area : '') + ' Hồ Chí Minh', center, typeof it.lat === 'number' ? 2000 : 30000, 3);
+        let best = null; for (const x of r){ const sc = Math.max(nameScore(it.name, x.name), nameScore(x.name, it.name)); if (sc >= 0.5 && (!best || sc > best.sc)) best = { ...x, sc }; }
+        out.push(best ? { id:it.id, g_place_id:best.id, lat:best.lat, lng:best.lng, rating:best.rating, count:best.count, url:best.url, address:best.address } : { id:it.id, none:true });
+      } catch (e) { if (e.code === 'limit') return { limit:true, items:out }; out.push({ id:it.id, err:true }); }
+    }
+    return { items:out };
+  },
+  async gusage(b, ctx, req){ const n = await sbRpc(req.headers.authorization, 'google_usage', {}); return { used:typeof n === 'number' ? n : null, limit:900, enabled:!!process.env.GOOGLE_PLACES_KEY }; },
   // Tra vị trí theo tên quán trên OpenStreetMap (tối đa 8 quán, 1 lượt/giây theo quy định của Nominatim)
   async geoname(b){
     const items = (b.items || []).slice(0, 8); const out = [];
@@ -159,6 +206,6 @@ module.exports = async (req, res) => {
     forms:['Cơm','Xôi & cháo','Bún & phở','Mì & hủ tiếu','Bánh mì','Bánh & cuốn','Lẩu','Nướng','Hải sản','Món gà & vịt','Sushi & món Nhật','Pizza & mì Ý','Món chay','Ăn vặt đường phố','Chiên & xiên','Bánh ngọt','Chè & kem','Cà phê','Trà sữa','Trà & nước ép','Sinh tố & đá xay','Mồi nhậu','Ốc','Bia & cocktail'],
     cuisines:['Việt','Nhật','Hàn','Trung','Thái','Âu','Ấn','Khác'], types:['Vỉa hè','Quán ăn','Quán nhậu','Nhà hàng','Cà phê','Bar','Tiệm dessert']
   };
-  try { return res.status(200).json(await fn(b, ctx)); }
+  try { return res.status(200).json(await fn(b, ctx, req)); }
   catch (e) { console.error(b.task, e.message); return res.status(e.code === 'no_key' ? 503 : e.code === 'quota' ? 429 : 502).json({ error:e.code || 'ai', detail:String(e.message || '').slice(0, 200) }); }
 };

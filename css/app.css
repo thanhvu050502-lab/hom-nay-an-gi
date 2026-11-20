@@ -158,3 +158,4 @@ body.noauth nav{display:none}
 .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.85) saturate(.5)}
 .map.pinning{outline:2px dashed var(--lime);outline-offset:2px;cursor:crosshair}
 .map.pinning .leaflet-container,.map.pinning.leaflet-container{cursor:crosshair}
+.btn.on-lime{border-color:var(--lime);color:var(--lime)}

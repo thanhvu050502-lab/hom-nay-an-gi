@@ -263,3 +263,15 @@ create policy photos_upload on storage.objects for insert to authenticated
 drop policy if exists photos_delete on storage.objects;
 create policy photos_delete on storage.objects for delete to authenticated
   using (bucket_id = 'photos' and owner = auth.uid());
+
+-- ---------- 2026-11-20: Google Places (gói miễn phí) và nhãn danh sách Takeout ----------
+alter table public.places add column if not exists g_place_id text;
+alter table public.places add column if not exists g_rating numeric;
+alter table public.places add column if not exists g_count int;
+alter table public.places add column if not exists g_url text;
+alter table public.places add column if not exists g_at timestamptz;
+create table if not exists public.search_cache (key text primary key, data jsonb not null, at timestamptz not null default now());
+alter table public.search_cache enable row level security;
+create table if not exists public.api_usage (month text primary key, n int not null default 0);
+alter table public.api_usage enable row level security;
+-- hàm use_google(p_kind) giới hạn 900 lượt/tháng (600 cho việc lấy điểm hàng loạt); google_usage() trả số lượt đã dùng

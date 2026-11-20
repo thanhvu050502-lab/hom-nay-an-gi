@@ -20,7 +20,8 @@ export function myScore(p){ const r = myRating(p); return r && r.stars ? +r.star
 export function again(p){ const r = myRating(p); return r ? r.again : null; }
 export function bannedByAnyone(p){ return S.place_ratings.some(x => x.place_id === p.id && x.again === 'no'); }
 export function myMeals(p){ return S.meals.filter(m => m.place_id === p.id && m.created_by === me()); }
-export function visits(p){ return S.meals.filter(m => m.place_id === p.id).filter(m => m.created_by === me() || (m.with_users || []).includes(me())).length; }
+export function mealCount(p){ return S.meals.filter(m => m.place_id === p.id).filter(m => m.created_by === me() || (m.with_users || []).includes(me())).length; }
+export function visits(p){ const n = mealCount(p); return n || ((p.tags || {}).visited ? 1 : 0); }
 export function lastVisit(p){ let t = 0; S.meals.forEach(m => { if (m.place_id === p.id && (m.created_by === me() || (m.with_users || []).includes(me()))) t = Math.max(t, +new Date(m.at)); }); return t || null; }
 export function daysSince(p){ const t = lastVisit(p); return t ? Math.floor((Date.now() - t) / 864e5) : null; }
 
@@ -42,7 +43,7 @@ export function priceTxt(p){
   return p.pmin + '–' + (p.pmax >= 9999 ? '' : p.pmax) + 'k';
 }
 
-export function defaultFilters(){ return { mood:null, price:null, priceMin:null, priceMax:null, cuisine:[], type:[], group:[], forms:[], who:null, area:null, radius:null, open:true, plan:false, meal:true, occasion:[], weather:[] }; }
+export function defaultFilters(){ return { wheel:[], mood:null, price:null, priceMin:null, priceMax:null, cuisine:[], type:[], group:[], forms:[], who:null, area:null, radius:null, open:true, plan:false, meal:true, occasion:[], weather:[] }; }
 
 // ignore: các khóa bộ lọc cần bỏ qua (để đếm "bỏ cái này còn bao nhiêu quán")
 export function matches(p, f, ignore = {}, opts = {}){
@@ -76,7 +77,7 @@ export const candidates = (f, ignore, opts) => S.places.filter(p => matches(p, f
 
 export function weight(p, f, opts = {}){
   let s = opts.scoreOf ? opts.scoreOf(p) : myScore(p);
-  if (s == null){ const g = groupScore(p); s = g ? g.avg : 3.5; }
+  if (s == null){ const g = groupScore(p); s = g ? g.avg : (p.g_rating ? Math.max(2.5, Math.min(5, +p.g_rating)) : 3.5); }
   let w = s / 3;
   const d = daysSince(p);
   w *= d == null ? 1.5 : d < 7 ? 0.2 : Math.min(1.5, 0.5 + d / 30);
@@ -165,3 +166,12 @@ export async function weatherNow(){
   } catch (e) { W.now = null; }
   return W.now;
 }
+
+export function norm(x){ return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+// Quán hợp với một ô trên vòng quay: loại món thì theo tag, món cụ thể thì theo tên quán, menu, ghi chú
+export function pickPlaces(pick, list){
+  if (FORM.includes(pick)) return list.filter(p => formOf(p) === pick);
+  const k = norm(pick); if (!k) return [];
+  return list.filter(p => norm([p.name, p.note, formOf(p), ...dishesOf(p).map(d => d.name)].join(' ')).includes(k));
+}
+export function gStars(p){ return p.g_rating ? '★ ' + String(Math.round(p.g_rating * 10) / 10).replace('.', ',') + (p.g_count ? ' (' + (p.g_count >= 1000 ? (Math.round(p.g_count / 100) / 10).toString().replace('.', ',') + 'k' : p.g_count) + ')' : '') : ''; }
