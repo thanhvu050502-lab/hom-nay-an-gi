@@ -66,6 +66,12 @@ function coordsFrom(text, url){
   return null;
 }
 const TASKS = {
+  async geodebug(b){
+    const r = await fetchText(b.url + (b.url.includes('?') ? '&' : '?') + 'hl=vi&gl=vn', 8000);
+    const pairs = []; const re = /(-?\d{1,3}\.\d{5,})\s*,\s*(-?\d{1,3}\.\d{5,})/g; let m;
+    while ((m = re.exec(r.text)) && pairs.length < 40) pairs.push([m[1], m[2], r.text.slice(Math.max(0, m.index - 40), m.index).replace(/[^\x20-\x7e]/g, '?')]);
+    return { finalUrl:r.url, len:r.text.length, title:(r.text.match(/<title>([^<]*)/) || [])[1], og:meta(r.text, 'og:title'), ogimg:meta(r.text, 'og:image').slice(0, 200), pairs };
+  },
   // Lấy tọa độ và địa chỉ cho link Google Maps (tối đa 10 link một lần)
   async geo(b){
     const urls = (b.urls || []).filter(u => /^https?:\/\/[^/]*(google\.[^/]+\/maps|goo\.gl|maps\.app)/i.test(u)).slice(0, 10);
