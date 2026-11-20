@@ -60,7 +60,27 @@ async function fetchText(url, ms = 8000){
   finally { clearTimeout(t); }
 }
 
+function coordsFrom(text, url){
+  const pats = [/center=(-?\d{1,2}\.\d+)%2C(-?\d{1,3}\.\d+)/, /@(-?\d{1,2}\.\d{3,}),(-?\d{1,3}\.\d{3,})/, /!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/, /\[null,null,(-?\d{1,2}\.\d{4,}),(-?\d{1,3}\.\d{4,})\]/];
+  for (const re of pats){ const m = (url || '').match(re) || (text || '').match(re); if (m){ const lat = +m[1], lng = +m[2]; if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0)) return { lat, lng }; } }
+  return null;
+}
 const TASKS = {
+  // Lấy tọa độ và địa chỉ cho link Google Maps (tối đa 10 link một lần)
+  async geo(b){
+    const urls = (b.urls || []).filter(u => /^https?:\/\/[^/]*(google\.[^/]+\/maps|goo\.gl|maps\.app)/i.test(u)).slice(0, 10);
+    const one = async u => {
+      try {
+        const r = await fetchText(u, 7000);
+        const c = coordsFrom(r.text, r.url);
+        let t = meta(r.text, 'og:title'); const parts = t.split(' · ');
+        return c ? { url:u, lat:c.lat, lng:c.lng, address:parts.length > 1 ? parts.slice(1).join(' · ').trim() : '' } : { url:u, fail:true, status:r.ok };
+      } catch (e) { return { url:u, fail:true, err:e.message }; }
+    };
+    const out = [];
+    for (let i = 0; i < urls.length; i += 5) out.push(...await Promise.all(urls.slice(i, i + 5).map(one)));
+    return { items:out };
+  },
   async ping(){
     const key = process.env.GEMINI_API_KEY; const t0 = Date.now();
     try {
